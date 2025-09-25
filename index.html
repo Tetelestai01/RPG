@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RPG Betsim - Aventura</title>
+<title>RPG Betsim - Missão dos Artefatos</title>
 <style>
 body {font-family:'Segoe UI',sans-serif; margin:0; padding:0; background:#f5f5f5; color:#333;}
 #hud {position:fixed; top:0; left:0; width:100%; background:#222; color:#fff; padding:10px; font-weight:bold; display:flex; justify-content:space-around; flex-wrap:wrap; z-index:100;}
@@ -31,7 +31,7 @@ input {margin:5px; padding:5px; border-radius:3px; border:1px solid #ccc;}
 
 <div id="gameScreen">
   <div id="startScreen">
-    <h1>RPG Betsim - Aventura</h1>
+    <h1>RPG Betsim - Missão dos Artefatos</h1>
     <button onclick="startCharacterCreation()">Criar Ficha</button>
   </div>
 
@@ -56,11 +56,10 @@ input {margin:5px; padding:5px; border-radius:3px; border:1px solid #ccc;}
     <button onclick="restartGame()">Reiniciar Jogo</button>
     <button onclick="exitGame()">Sair do Jogo</button>
   </div>
-
 </div>
 
 <script>
-// --- Player inicial ---
+// --- Player ---
 let player = {
     name:'',
     vigor:0,
@@ -75,10 +74,10 @@ let player = {
     weapon:null,
     inventory:[null,null,null]
 };
-
 let totalPoints = 10;
 let exploredLocations = {};
 let propinaBonusActive = false;
+let artifactsFound = [false,false,false,false];
 
 // --- Criação de ficha ---
 function startCharacterCreation(){
@@ -118,22 +117,12 @@ function updateHUD(){
 }
 
 // --- Menu ---
-function openMenu(){
-    document.getElementById('menuScreen').classList.remove('hidden');
-}
-function resumeGame(){
-    document.getElementById('menuScreen').classList.add('hidden');
-}
-function restartGame(){
-    location.reload();
-}
-function exitGame(){
-    if(confirm('Deseja realmente sair? Toda ficha será perdida.')){
-        location.reload();
-    }
-}
+function openMenu(){document.getElementById('menuScreen').classList.remove('hidden');}
+function resumeGame(){document.getElementById('menuScreen').classList.add('hidden');}
+function restartGame(){location.reload();}
+function exitGame(){if(confirm('Deseja realmente sair? Toda ficha será perdida.')) location.reload();}
 
-// --- Sistema de XP ---
+// --- XP ---
 function gainXP(sourceType, value, extraData=null){
     let xpGain = value;
     if(sourceType==='explore'){
@@ -142,16 +131,13 @@ function gainXP(sourceType, value, extraData=null){
         exploredLocations[loc] = true;
         alert(`Você ganhou ${xpGain} XP explorando ${loc}!`);
     }
-    if(sourceType==='propina' && propinaBonusActive){
-        xpGain *= 2;
-        alert(`XP dobrado por propina! Você ganhou ${xpGain} XP.`);
-    }
+    if(sourceType==='propina' && propinaBonusActive) xpGain*=2;
     player.xp += xpGain;
     updateHUD();
     checkLevelUp();
 }
 function checkLevelUp(){
-    let nextXP = getXPForNextLevel(player.level);
+    let nextXP = Math.floor(100 * Math.pow(1.5, player.level-1));
     if(player.xp >= nextXP){
         player.level++;
         player.xp -= nextXP;
@@ -160,9 +146,6 @@ function checkLevelUp(){
         updateHUD();
         checkLevelUp();
     }
-}
-function getXPForNextLevel(level){
-    return Math.floor(100 * Math.pow(1.5, level-1));
 }
 function allocateAttributePoint(){
     const attr = prompt(`Distribua 1 ponto em: vigor, forca, destreza ou armadura`).toLowerCase();
@@ -174,38 +157,111 @@ function allocateAttributePoint(){
     player.pv = player.vigor*10;
 }
 
-// --- Início da aventura ---
-function startAdventure(){
-    document.getElementById('locationScreen').innerHTML = `<h2>O Rei Robert convoca você para recuperar os 4 artefatos da chave!</h2>
-    <button onclick="goToLocation('cidade')">Ir à Cidade</button>
-    <button onclick="goToLocation('floresta')">Explorar Floresta</button>
-    <button onclick="goToLocation('biblioteca')">Ir à Biblioteca</button>`;
-}
+// --- Aventura ---
+function startAdventure(){navigateLocation('inicio');}
 
-// --- Exploração ---
-function goToLocation(loc){
-    let content = '';
-    if(loc==='cidade'){
-        content = `<h3>Cidade de Betsim</h3>
-        <button onclick="gainXP('explore', 20,'cidade')">Explorar ruas</button>`;
+function navigateLocation(loc){
+    let content='';
+    if(loc==='inicio'){
+        content=`<h2>O Rei Robert convoca você para recuperar os 4 artefatos da chave!</h2>
+        <button onclick="navigateLocation('cidade')">Ir à Cidade</button>
+        <button onclick="navigateLocation('floresta')">Explorar Floresta</button>
+        <button onclick="navigateLocation('biblioteca')">Ir à Biblioteca</button>`;
+    } else if(loc==='cidade'){
+        content=`<h3>Cidade de Betsim</h3>
+        <button onclick="gainXP('explore',20,'cidade')">Explorar ruas</button>
+        <button onclick="startBattle()">Encontrar inimigo</button>
+        <button onclick="openShop()">Ir à Loja</button>
+        <button onclick="navigateLocation('inicio')">Voltar</button>`;
     } else if(loc==='floresta'){
         if(!player.weapon) alert('Cuidado! Você está sem espada.');
-        content = `<h3>Floresta</h3>
-        <button onclick="gainXP('explore', 40,'floresta')">Explorar trilhas</button>`;
+        content=`<h3>Floresta</h3>
+        <button onclick="gainXP('explore',40,'floresta')">Explorar trilhas</button>
+        <button onclick="startBattle()">Encontrar inimigo</button>
+        <button onclick="navigateLocation('inicio')">Voltar</button>`;
     } else if(loc==='biblioteca'){
-        content = `<h3>Biblioteca</h3>
-        <button onclick="gainXP('explore', 50,'biblioteca')">Pesquisar livros</button>`;
+        content=`<h3>Biblioteca</h3>
+        <button onclick="gainXP('explore',50,'biblioteca')">Pesquisar livros</button>
+        <button onclick="navigateLocation('inicio')">Voltar</button>`;
     }
     document.getElementById('locationScreen').innerHTML = content;
+    document.getElementById('battleLog').classList.add('hidden');
     updateHUD();
 }
 
-// --- Propina (Easter Egg) ---
-function activatePropina(){
-    if(player.gold<=20 && player.hand && player.hand.name==='ouro'){
-        propinaBonusActive=true;
-        alert('Easter egg ativado! Sistema de propina desbloqueado.');
-    }
+// --- Batalha com rolagem de dados ---
+function startBattle(){
+    let enemy = {
+        name:'Inimigo',
+        vigor:2,
+        forca:2,
+        destreza:2,
+        armadura:1,
+        pv:20
+    };
+    document.getElementById('battleLog').classList.remove('hidden');
+    document.getElementById('battleLog').innerHTML = `<h3>Batalha contra ${enemy.name}</h3>`;
+    battleTurn(enemy);
+}
+
+function battleTurn(enemy){
+    if(player.pv<=0){alert('Você morreu!'); return;}
+    if(enemy.pv<=0){alert('Inimigo derrotado!'); gainXP('combat',50); return;}
+    rollDice('player', player, enemy);
+}
+
+function rollDice(attackerType, attacker, defender){
+    let roll = 0, rollInterval;
+    let log = document.getElementById('battleLog');
+    log.innerHTML += `<p>${attackerType==='player'?player.name:attacker.name} preparando ataque...</p>`;
+    let count=0;
+    rollInterval = setInterval(()=>{
+        roll = Math.floor(Math.random()*6)+1;
+        count++;
+        if(count>=4){
+            clearInterval(rollInterval);
+            let attackVal = roll + attacker.destreza;
+            let defenseRoll = Math.floor(Math.random()*6)+1 + defender.armadura;
+            let damage = attackVal - defenseRoll;
+            if(damage<0) damage=0;
+            defender.pv -= damage;
+            log.innerHTML += `<p>${attackerType==='player'?player.name:attacker.name} rolou ${roll}+Destreza(${attacker.destreza}) = ${attackVal}</p>`;
+            log.innerHTML += `<p>${defender.name} defendeu com dado + Armadura = ${defenseRoll}</p>`;
+            log.innerHTML += `<p>Dano causado: ${damage}. PV de ${defender.name}: ${defender.pv}</p>`;
+            if(defender.pv<=0){
+                alert(`${defender.name} derrotado!`);
+                gainXP('combat',50);
+                return;
+            }
+            if(attackerType==='player') rollDice('enemy', defender, attacker);
+            else rollDice('player', attacker, defender);
+        }
+    },500);
+}
+
+// --- Loja ---
+function openShop(){
+    let content=`<h3>Loja</h3>
+    <button onclick="buyItem('espada')">Comprar Espada +2 (20 Ouro)</button>
+    <button onclick="buyItem('porcao')">Comprar Poção +10 PV (10 Ouro)</button>
+    <button onclick="navigateLocation('cidade')">Voltar</button>`;
+    document.getElementById('locationScreen').innerHTML = content;
+}
+
+function buyItem(item){
+    if(item==='espada' && player.gold>=20){
+        player.gold-=20;
+        player.weapon={name:'Espada +2', forceBonus:2};
+        alert('Espada comprada!');
+    } else if(item==='porcao' && player.gold>=10){
+        player.gold-=10;
+        let slot = player.inventory.findIndex(x=>x===null);
+        if(slot!==-1){
+            player.inventory[slot]={name:'Poção', heal:10};
+            alert('Poção comprada!');
+        } else alert('Inventário cheio!');
+    } else alert('Ouro insuficiente!');
+    updateHUD();
 }
 </script>
 
