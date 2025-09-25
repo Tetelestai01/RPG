@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RPG Betsim</title>
+<title>RPG Betsim - Escala Completa</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:"Segoe UI",Arial,sans-serif;background:#f4f4f4;color:#2c3e50;padding-top:80px;}
@@ -20,7 +20,7 @@ main{padding:20px;}
 .form-group{margin-bottom:12px;}
 .form-group label{display:block;font-size:14px;margin-bottom:4px;color:#34495e;}
 .form-group input{width:100%;padding:8px 10px;border:1px solid #ccd1d9;border-radius:6px;font-size:14px;}
-#mensagem{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;white-space:pre-wrap;}
+#mensagem{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;white-space:pre-wrap;max-height:300px;overflow-y:auto;}
 ul{padding-left:20px;}
 </style>
 </head>
@@ -33,7 +33,6 @@ ul{padding-left:20px;}
 </header>
 
 <main>
-<!-- Tela Inicial -->
 <div id="telaInicial" class="card">
 <h1>RPG Betsim</h1>
 <div id="menuInicial">
@@ -43,7 +42,6 @@ ul{padding-left:20px;}
 <div id="msgCrieFicha">Crie seu personagem para iniciar o jogo.</div>
 </div>
 
-<!-- Tela Ficha -->
 <div id="telaFicha" class="card hidden">
 <h2>Criação de Personagem</h2>
 <div class="form-group">
@@ -60,22 +58,19 @@ ul{padding-left:20px;}
 <div id="mensagemFicha"></div>
 </div>
 
-<!-- Tela Jogo -->
 <div id="telaJogo" class="card hidden">
 <div id="mensagem">Bem-vindo a Betsim. Sua aventura começa agora.</div>
 <div id="opcoesJogo"></div>
 </div>
 
-<!-- Tela Batalha -->
 <div id="telaBatalha" class="card hidden">
 <h2>Batalha!</h2>
 <div id="mensagemBatalha"></div>
-<div id="rolagemDados" style="font-size:24px;margin:10px 0;"></div>
-<button class="btn" id="btnRolar" onclick="rolarDado()">Rolar Dado</button>
+<div id="rolagemDados" style="font-size:20px;margin:10px 0;"></div>
+<button class="btn" id="btnRolar" onclick="iniciarTurno()">Iniciar Turno</button>
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
 </div>
 
-<!-- Tela Conversa -->
 <div id="telaConversa" class="card hidden">
 <h2>Conversa</h2>
 <div id="mensagemConversa"></div>
@@ -83,7 +78,6 @@ ul{padding-left:20px;}
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
 </div>
 
-<!-- Tela Perfil -->
 <div id="telaPerfil" class="card hidden">
 <h2>Perfil do Jogador</h2>
 <div id="perfilAtributos"></div>
@@ -95,12 +89,10 @@ ul{padding-left:20px;}
 </div>
 
 <script>
-// ----------------- Variáveis -----------------
-let jogador = {nome:"",vigor:0,forca:0,destreza:0,armadura:0,pv:0,nivel:1,xp:0,ouro:50,inventario:[],arma:null,bolsa:[null,null,null]};
-let inimigo={nome:"Goblin",vigor:2,forca:2,destreza:2,armadura:1,pv:20};
+let jogador = {nome:"",vigor:0,forca:0,destreza:0,armadura:0,pv:0,nivel:1,xp:0,ouro:50,inventario:[],bolsa:[null,null,null]};
+let inimigo;
 let rolando=false;
 
-// ----------------- Inicial -----------------
 window.onload=function(){
 if(localStorage.getItem("jogador")){
 jogador=JSON.parse(localStorage.getItem("jogador"));
@@ -108,14 +100,14 @@ atualizarNome();
 document.getElementById("btnIniciarJogo").classList.remove("hidden");
 document.getElementById("msgCrieFicha").classList.add("hidden");
 }
-}
+};
 
-// ----------------- Ficha -----------------
 function atualizarNome(){
 document.getElementById("nomeJogador").innerText=jogador.nome;
 document.getElementById("atributosJogador").innerText=`V:${jogador.vigor} F:${jogador.forca} D:${jogador.destreza} A:${jogador.armadura} PV:${jogador.pv}`;
 }
 
+// Ficha
 function atualizaPontos(){
 let v=parseInt(document.getElementById("attrVigor").value)||0;
 let f=parseInt(document.getElementById("attrForca").value)||0;
@@ -144,7 +136,6 @@ document.getElementById("btnIniciarJogo").classList.remove("hidden");
 document.getElementById("msgCrieFicha").classList.add("hidden");
 }
 
-// ----------------- Navegação -----------------
 function editarFicha(){
 document.getElementById("telaInicial").classList.add("hidden");
 document.getElementById("telaFicha").classList.remove("hidden");
@@ -162,7 +153,6 @@ document.getElementById("telaJogo").classList.remove("hidden");
 cidade();
 }
 
-// ----------------- Perfil -----------------
 function abrirPerfil(){
 document.getElementById("telaPerfil").classList.remove("hidden");
 document.getElementById("telaJogo").classList.add("hidden");
@@ -182,14 +172,14 @@ let html=`<p>Nome: ${jogador.nome}</p>
 document.getElementById("perfilAtributos").innerHTML=html;
 let lista=document.getElementById("listaItens");
 lista.innerHTML="";
-jogador.bolsa.forEach((item,i)=>{lista.innerHTML+=`<li>${item||"Vazio"}</li>`;});
+jogador.bolsa.forEach((item)=>{lista.innerHTML+=`<li>${item||"Vazio"}</li>`;});
 }
 
-// ----------------- Cidade / Floresta / Conversa -----------------
+// Cidade
 function cidade(){
 document.getElementById("telaJogo").classList.remove("hidden");
 document.getElementById("mensagem").innerText="Você está na cidade de Betsim. Escolha seu destino.";
-exibirOpcoes(["Ir à loja","Conversar com NPC","Explorar floresta"],["loja","npc","floresta"]);
+exibirOpcoes(["Conversar com aldeão","Explorar floresta"],["npc","floresta"]);
 }
 
 function exibirOpcoes(textos,funcs){
@@ -206,83 +196,82 @@ div.appendChild(btn);
 
 function avaliarAcao(acao){
 switch(acao){
-case "loja": alert("Loja: ainda em desenvolvimento."); cidade(); break;
 case "npc": conversaNPC(); break;
 case "floresta": iniciarBatalha(); break;
 }
 }
 
+// Conversa com NPC
 function conversaNPC(){
 document.getElementById("telaJogo").classList.add("hidden");
 document.getElementById("telaConversa").classList.remove("hidden");
-document.getElementById("mensagemConversa").innerText="NPC diz: 'Ouvi rumores sobre a chave do dragão. Cuidado na floresta!'";
+document.getElementById("mensagemConversa").innerText="Aldeão: 'Se quiser armas ou poções, posso te levar à loja.'";
 let div=document.getElementById("opcoesConversa");
 div.innerHTML="";
-let btn=document.createElement("button");
-btn.className="btn";
-btn.innerText="Continuar";
-btn.onclick=function(){document.getElementById("telaConversa").classList.add("hidden");cidade();};
-div.appendChild(btn);
+let btnLoja=document.createElement("button");
+btnLoja.className="btn";
+btnLoja.innerText="Ir à loja";
+btnLoja.onclick=function(){alert("Loja: em desenvolvimento.");};
+div.appendChild(btnLoja);
+let btnContinuar=document.createElement("button");
+btnContinuar.className="btn";
+btnContinuar.innerText="Continuar";
+btnContinuar.onclick=function(){document.getElementById("telaConversa").classList.add("hidden");cidade();};
+div.appendChild(btnContinuar);
 }
 
-// ----------------- Combate -----------------
+// Batalha detalhada
 function iniciarBatalha(){
 document.getElementById("telaJogo").classList.add("hidden");
 document.getElementById("telaBatalha").classList.remove("hidden");
 inimigo={nome:"Goblin",vigor:2,forca:2,destreza:2,armadura:1,pv:20};
-document.getElementById("mensagemBatalha").innerText=`Você encontra um ${inimigo.nome}! Seu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}`;
+document.getElementById("mensagemBatalha").innerText=`Você encontra um ${inimigo.nome}!\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}`;
 document.getElementById("rolagemDados").innerText="";
 document.getElementById("btnRolar").disabled=false;
 }
 
-function rolarDado(){
+function iniciarTurno(){
 if(rolando) return;
 rolando=true;
 document.getElementById("btnRolar").disabled=true;
-let display=document.getElementById("rolagemDados");
-let tempo=0;
-let intervalo=setInterval(()=>{
-let num=Math.floor(Math.random()*6)+1;
-display.innerText=num;
-tempo+=100;
-if(tempo>=4000){
-clearInterval(intervalo);
-resolverTurno(num);
-rolando=false;
-document.getElementById("btnRolar").disabled=false;
-}
-},100);
+document.getElementById("rolagemDados").innerText="Rolando dados...";
+setTimeout(executarTurno,1000);
 }
 
-function resolverTurno(dado){
-let ataqueJogador=dado+jogador.destreza;
-let defesaInimigo=Math.floor(Math.random()*6+1)+inimigo.armadura;
-let dano=ataqueJogador-defesaInimigo;
-if(dano<0) dano=0;
-inimigo.pv-=dano;
+function executarTurno(){
+let dadoAtaque=Math.floor(Math.random()*6)+1;
+let ataqueJogador=dadoAtaque+jogador.destreza;
+let dadoDefesa=Math.floor(Math.random()*6)+1;
+let defesaInimigo=dadoDefesa+inimigo.armadura;
+let dano=ataqueJogador-defesaInimigo; if(dano<0)dano=0; inimigo.pv-=dano;
 
-let ataqueInimigo=Math.floor(Math.random()*6+1)+inimigo.destreza;
-let defesaJogador=Math.floor(Math.random()*6+1)+jogador.armadura;
-let danoInimigo=ataqueInimigo-defesaJogador;
-if(danoInimigo<0) danoInimigo=0;
-jogador.pv-=danoInimigo;
+let msg=`Você ataca! Destreza:${jogador.destreza} + Dado:${dadoAtaque} = Ataque ${ataqueJogador}\n`;
+msg+=`Inimigo defende! Armadura:${inimigo.armadura} + Dado:${dadoDefesa} = Defesa ${defesaInimigo}\n`;
+msg+=`Dano causado: ${dano}\nPV Inimigo restante: ${inimigo.pv}\n`;
+
+if(inimigo.pv>0){
+let dadoAtaqueInim=Math.floor(Math.random()*6)+1;
+let ataqueInimigo=dadoAtaqueInim+inimigo.destreza;
+let dadoDefJog=Math.floor(Math.random()*6)+1;
+let defesaJogador=dadoDefJog+jogador.armadura;
+let danoInimigo=ataqueInimigo-defesaJogador; if(danoInimigo<0)danoInimigo=0; jogador.pv-=danoInimigo;
+msg+=`\nInimigo ataca! Destreza:${inimigo.destreza} + Dado:${dadoAtaqueInim} = Ataque ${ataqueInimigo}\n`;
+msg+=`Você defende! Armadura:${jogador.armadura} + Dado:${dadoDefJog} = Defesa ${defesaJogador}\n`;
+msg+=`Dano recebido: ${danoInimigo}\nSeu PV restante: ${jogador.pv}\n`;
+}
+
+document.getElementById("mensagemBatalha").innerText=msg;
 
 if(jogador.pv<=0){
-document.getElementById("mensagemBatalha").innerText=`Você foi derrotado pelo ${inimigo.nome}!`;
-document.getElementById("rolagemDados").innerText="";
+alert("Você foi derrotado!");
 document.getElementById("btnRolar").disabled=true;
 } else if(inimigo.pv<=0){
-document.getElementById("mensagemBatalha").innerText=`Você derrotou o ${inimigo.nome}! PV restante: ${jogador.pv}`;
-document.getElementById("rolagemDados").innerText="";
+alert(`Você derrotou o ${inimigo.nome}!`);
 document.getElementById("btnRolar").disabled=true;
-let btnContinuar=document.createElement("button");
-btnContinuar.className="btn";
-btnContinuar.innerText="Voltar à cidade";
-btnContinuar.onclick=function(){voltarJogo();};
-document.getElementById("rolagemDados").appendChild(btnContinuar);
-} else{
-document.getElementById("mensagemBatalha").innerText=`Turno concluído!\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}\nRolar novamente para próximo ataque.`;
 }
+
+rolando=false;
+document.getElementById("btnRolar").disabled=false;
 }
 
 function voltarJogo(){
@@ -299,4 +288,3 @@ document.getElementById("telaInicial").classList.remove("hidden");
 </main>
 </body>
 </html>
-
