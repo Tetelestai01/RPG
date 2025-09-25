@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RPG Betsim - Escala Completa</title>
+<title>RPG Betsim - Aventura Completa</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:"Segoe UI",Arial,sans-serif;background:#f4f4f4;color:#2c3e50;padding-top:80px;}
@@ -20,7 +20,7 @@ main{padding:20px;}
 .form-group{margin-bottom:12px;}
 .form-group label{display:block;font-size:14px;margin-bottom:4px;color:#34495e;}
 .form-group input{width:100%;padding:8px 10px;border:1px solid #ccd1d9;border-radius:6px;font-size:14px;}
-#mensagem{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;white-space:pre-wrap;max-height:300px;overflow-y:auto;}
+#mensagem,#mensagemBatalha,#mensagemConversa{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;white-space:pre-wrap;max-height:300px;overflow-y:auto;}
 ul{padding-left:20px;}
 #menuOpcao{position:fixed;top:50px;right:10px;background:#34495e;color:white;padding:10px;border-radius:8px;display:none;z-index:1001;}
 #menuOpcao button{display:block;width:100%;margin:5px 0;}
@@ -45,17 +45,15 @@ ul{padding-left:20px;}
 </div>
 
 <main>
-<!-- Tela Inicial -->
 <div id="telaInicial" class="card">
 <h1>RPG Betsim</h1>
 <div id="menuInicial">
-<button id="btnIniciarJogo" class="btn hidden" onclick="iniciarJogo()">Iniciar Jogo</button>
-<button class="btn-secondary" onclick="editarFicha()">Criar / Editar Ficha</button>
+<button class="btn" id="btnCriarFicha" onclick="editarFicha()">Criar Ficha</button>
+<button class="btn hidden" id="btnIniciarJogo" onclick="iniciarJogo()">Iniciar Aventura</button>
 </div>
 <div id="msgCrieFicha">Crie seu personagem para iniciar o jogo.</div>
 </div>
 
-<!-- Tela de Ficha -->
 <div id="telaFicha" class="card hidden">
 <h2>Criação de Personagem</h2>
 <div class="form-group">
@@ -72,13 +70,11 @@ ul{padding-left:20px;}
 <div id="mensagemFicha"></div>
 </div>
 
-<!-- Tela do Jogo -->
 <div id="telaJogo" class="card hidden">
 <div id="mensagem">Bem-vindo a Betsim. Sua aventura começa agora.</div>
 <div id="opcoesJogo"></div>
 </div>
 
-<!-- Tela de Batalha -->
 <div id="telaBatalha" class="card hidden">
 <h2>Batalha!</h2>
 <div id="mensagemBatalha"></div>
@@ -87,7 +83,6 @@ ul{padding-left:20px;}
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
 </div>
 
-<!-- Tela de Conversa -->
 <div id="telaConversa" class="card hidden">
 <h2>Conversa</h2>
 <div id="mensagemConversa"></div>
@@ -95,7 +90,6 @@ ul{padding-left:20px;}
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
 </div>
 
-<!-- Tela de Perfil -->
 <div id="telaPerfil" class="card hidden">
 <h2>Perfil do Jogador</h2>
 <div id="perfilAtributos"></div>
@@ -117,6 +111,7 @@ if(localStorage.getItem("jogador")){
 jogador=JSON.parse(localStorage.getItem("jogador"));
 atualizarNome();
 document.getElementById("btnIniciarJogo").classList.remove("hidden");
+document.getElementById("btnCriarFicha").classList.add("hidden");
 document.getElementById("msgCrieFicha").classList.add("hidden");
 }
 };
@@ -152,6 +147,7 @@ alert("Ficha salva!");
 document.getElementById("telaFicha").classList.add("hidden");
 document.getElementById("telaInicial").classList.remove("hidden");
 document.getElementById("btnIniciarJogo").classList.remove("hidden");
+document.getElementById("btnCriarFicha").classList.add("hidden");
 document.getElementById("msgCrieFicha").classList.add("hidden");
 }
 
@@ -166,22 +162,20 @@ document.getElementById("attrArmadura").value=jogador.armadura;
 atualizaPontos();
 }
 
+// Menu
+function toggleMenu(){document.getElementById("menuOpcao").style.display=document.getElementById("menuOpcao").style.display=="none"?"block":"none";}
+function pauseJogo(){ alert("Jogo pausado."); toggleMenu();}
+function sairJogo(){ if(confirm("Deseja realmente sair do jogo?")){localStorage.removeItem("jogador");location.reload();} }
+function reiniciarJogo(){ if(confirm("Deseja reiniciar e criar nova ficha?")){localStorage.removeItem("jogador");location.reload();} }
+
 function iniciarJogo(){
 document.getElementById("telaInicial").classList.add("hidden");
 document.getElementById("telaJogo").classList.remove("hidden");
 cidade();
 }
 
-function abrirPerfil(){
-document.getElementById("telaPerfil").classList.remove("hidden");
-document.getElementById("telaJogo").classList.add("hidden");
-atualizarPerfil();
-}
-function fecharPerfil(){
-document.getElementById("telaPerfil").classList.add("hidden");
-document.getElementById("telaJogo").classList.remove("hidden");
-cidade();
-}
+function abrirPerfil(){document.getElementById("telaPerfil").classList.remove("hidden");document.getElementById("telaJogo").classList.add("hidden");atualizarPerfil();}
+function fecharPerfil(){document.getElementById("telaPerfil").classList.add("hidden");document.getElementById("telaJogo").classList.remove("hidden");cidade();}
 function atualizarPerfil(){
 let html=`<p>Nome: ${jogador.nome}</p>
 <p>Nível: ${jogador.nivel} XP: ${jogador.xp}</p>
@@ -194,20 +188,26 @@ lista.innerHTML="";
 jogador.bolsa.forEach((item)=>{lista.innerHTML+=`<li>${item||"Vazio"}</li>`;});
 }
 
-// Menu
-function toggleMenu(){
-let m=document.getElementById("menuOpcao");
-m.style.display=(m.style.display=="none"?"block":"none");
+// Funções do RPG completo (cidade, floresta, conversas, loja, batalhas, rolagem de dados) devem ser incluídas abaixo
+// Exemplo simplificado de cidade
+function cidade(){
+document.getElementById("mensagem").innerText="Você está na cidade de Betsim. O que deseja fazer?";
+document.getElementById("opcoesJogo").innerHTML='';
+addBtn("Ir para floresta",()=>floresta());
+addBtn("Conversar com aldeão",()=>conversaNPC());
 }
-function pauseJogo(){ alert("Jogo pausado."); toggleMenu();}
-function sairJogo(){ if(confirm("Deseja realmente sair do jogo?")){location.reload();} }
-function reiniciarJogo(){ if(confirm("Deseja reiniciar e criar nova ficha?")){localStorage.removeItem("jogador");location.reload();} }
 
-// Navegação e batalha (mantidas todas as funções anteriores)
-// cidade, exibirOpcoes, avaliarAcao, conversaNPC, iniciarBatalha, iniciarTurno, executarTurno, voltarJogo, voltarMenu
-// [Funções já definidas no HTML anterior]
-
+function floresta(){document.getElementById("mensagem").innerText="Você entrou na floresta...";document.getElementById("opcoesJogo").innerHTML='';addBtn("Voltar à cidade",()=>cidade());}
+function conversaNPC(){document.getElementById("mensagem").innerText="O aldeão diz: Posso te vender uma espada ou poção.";document.getElementById("opcoesJogo").innerHTML='';addBtn("Ir à loja",()=>loja());addBtn("Voltar",()=>cidade());}
+function loja(){document.getElementById("mensagem").innerText="Loja: Você pode comprar itens.";document.getElementById("opcoesJogo").innerHTML='';addBtn("Comprar espada (+2 força) - 20 ouro",()=>comprarItem("Espada +2",20));addBtn("Comprar poção (cura 20 PV) - 10 ouro",()=>comprarItem("Poção +20PV",10));addBtn("Voltar",()=>cidade());}
+function comprarItem(item,preco){if(jogador.ouro>=preco){jogador.ouro-=preco;for(let i=0;i<3;i++){if(!jogador.bolsa[i]){jogador.bolsa[i]=item;break;}}atualizarPerfil();alert("Comprou "+item);}else{alert("Ouro insuficiente.");}}
+// Funções auxiliares
+function addBtn(text,func){let b=document.createElement("button");b.className="btn";b.innerText=text;b.onclick=func;document.getElementById("opcoesJogo").appendChild(b);}
+function voltarMenu(){document.getElementById("telaFicha").classList.add("hidden");document.getElementById("telaInicial").classList.remove("hidden");}
+function voltarJogo(){document.getElementById("telaConversa").classList.add("hidden");document.getElementById("telaBatalha").classList.add("hidden");document.getElementById("telaJogo").classList.remove("hidden");}
 </script>
+
 </main>
 </body>
 </html>
+
