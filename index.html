@@ -444,14 +444,13 @@ function discardSlot(slot){
   }
 }
 function openPlaceInHand(){
-  // allow placing Ouro as special option as well
-  const choice = prompt('Colocar na mão: digite slot 1-3 para mover item ou "ouro" para colocar ouro na mão (representação para propina).');
+  // prompt somente mostra slots de inventário
+  const choice = prompt('Colocar na mão: digite slot 1-3 para mover item.');
   if(!choice) return;
-  if(choice.toLowerCase()==='ouro'){
-    if(player.ouro <= 0) return alert('Sem ouro.');
-    player.mao = 'ouro';
-    log('Você colocou ouro na mão (representação).');
-    saveGame(); updateHUD(); maybeShowPropinaUI();
+  const idx = Number(choice)-1;
+  if(isNaN(idx) || idx<0 || idx>2) return alert('Entrada inválida');
+  putHandFromSlot(idx);
+}
     return;
   }
   const idx = Number(choice)-1;
