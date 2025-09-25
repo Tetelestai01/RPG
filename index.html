@@ -37,9 +37,10 @@ ul{padding-left:20px;}
 <div id="telaInicial" class="card">
 <h1>RPG Betsim</h1>
 <div id="menuInicial">
-<button class="btn" onclick="iniciarJogo()">Iniciar Jogo</button>
-<button class="btn-secondary" onclick="editarFicha()">Editar Ficha</button>
+<button id="btnIniciarJogo" class="btn hidden" onclick="iniciarJogo()">Iniciar Jogo</button>
+<button class="btn-secondary" onclick="editarFicha()">Criar / Editar Ficha</button>
 </div>
+<div id="msgCrieFicha">Crie seu personagem para iniciar o jogo.</div>
 </div>
 
 <!-- Tela Ficha -->
@@ -61,7 +62,7 @@ ul{padding-left:20px;}
 
 <!-- Tela Jogo -->
 <div id="telaJogo" class="card hidden">
-<div id="mensagem">Bem-vindo à cidade de Betsim. O território foi invadido e você deve reunir a chave da grande caverna para derrotar o dragão de Luparus.</div>
+<div id="mensagem">História inicial: A cidade de Betsim foi invadida pelo inimigo Luparus. Você é um dos heróis escolhidos para reunir os fragmentos da chave da grande caverna. Suas escolhas podem levar a combates, pistas ou recompensas.</div>
 <div id="opcoesJogo"></div>
 </div>
 
@@ -71,6 +72,14 @@ ul{padding-left:20px;}
 <div id="mensagemBatalha"></div>
 <div id="rolagemDados" style="font-size:24px;margin:10px 0;"></div>
 <button class="btn" id="btnRolar" onclick="rolarDado()">Rolar Dado</button>
+<button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
+</div>
+
+<!-- Tela Conversa -->
+<div id="telaConversa" class="card hidden">
+<h2>Conversa</h2>
+<div id="mensagemConversa"></div>
+<div id="opcoesConversa"></div>
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
 </div>
 
@@ -88,7 +97,7 @@ ul{padding-left:20px;}
 <script>
 // ----------------- Variáveis -----------------
 let jogador = {
-nome:"Jogador",
+nome:"",
 vigor:0,
 forca:0,
 destreza:0,
@@ -112,6 +121,16 @@ pv:20
 };
 
 let rolando=false;
+
+// ----------------- Inicial -----------------
+window.onload=function(){
+if(localStorage.getItem("jogador")){
+jogador=JSON.parse(localStorage.getItem("jogador"));
+atualizarNome();
+document.getElementById("btnIniciarJogo").classList.remove("hidden");
+document.getElementById("msgCrieFicha").classList.add("hidden");
+}
+}
 
 // ----------------- Ficha -----------------
 function atualizarNome(){
@@ -138,16 +157,16 @@ jogador.forca=parseInt(document.getElementById("attrForca").value)||0;
 jogador.destreza=parseInt(document.getElementById("attrDestreza").value)||0;
 jogador.armadura=parseInt(document.getElementById("attrArmadura").value)||0;
 jogador.pv=jogador.vigor*10;
+localStorage.setItem("jogador",JSON.stringify(jogador));
 atualizarNome();
 alert("Ficha salva!");
-voltarMenu();
+document.getElementById("telaFicha").classList.add("hidden");
+document.getElementById("telaInicial").classList.remove("hidden");
+document.getElementById("btnIniciarJogo").classList.remove("hidden");
+document.getElementById("msgCrieFicha").classList.add("hidden");
 }
 
 // ----------------- Navegação -----------------
-function voltarMenu(){
-document.getElementById("telaFicha").classList.add("hidden");
-document.getElementById("telaInicial").classList.remove("hidden");
-}
 function editarFicha(){
 document.getElementById("telaInicial").classList.add("hidden");
 document.getElementById("telaFicha").classList.remove("hidden");
@@ -158,10 +177,11 @@ document.getElementById("attrDestreza").value=jogador.destreza;
 document.getElementById("attrArmadura").value=jogador.armadura;
 atualizaPontos();
 }
+
 function iniciarJogo(){
 document.getElementById("telaInicial").classList.add("hidden");
 document.getElementById("telaJogo").classList.remove("hidden");
-exibirOpcoes(["Ir à cidade","Explorar floresta","Checar status"],["cidade","floresta","status"]);
+historiasBetsim();
 }
 
 // ----------------- Perfil -----------------
@@ -187,7 +207,7 @@ lista.innerHTML="";
 jogador.bolsa.forEach((item,i)=>{lista.innerHTML+=`<li>${item||"Vazio"}</li>`;});
 }
 
-// ----------------- Sistema de Opções -----------------
+// ----------------- Funções auxiliares -----------------
 function exibirOpcoes(textos,funcs){
 let div=document.getElementById("opcoesJogo");
 div.innerHTML="";
@@ -202,110 +222,16 @@ div.appendChild(btn);
 
 function avaliarAcao(acao){
 switch(acao){
-case "cidade":
-document.getElementById("mensagem").innerText="Você chegou à cidade de Betsim. Pode visitar a loja ou conversar com NPC.";
-exibirOpcoes(["Loja","Conversar com NPC","Voltar"],["loja","npc","iniciar"]);
-break;
-case "floresta":
-iniciarBatalha();
-break;
-case "status":abrirPerfil(); break;
-case "loja":
-document.getElementById("mensagem").innerText="Você entra na loja. Pode comprar arma (+força) ou poção (+PV). Cada compra custa ouro.";
-exibirOpcoes(["Comprar Arma","Comprar Poção","Voltar"],["compraArma","compraPocao","cidade"]);
-break;
-case "npc":
-document.getElementById("mensagem").innerText="Você encontra um NPC corrupto. Pode tentar barganhar ou ignorar.";
-exibirOpcoes(["Barganhar","Ignorar"],["barganhar","cidade"]);
-break;
-case "compraArma":
-if(jogador.ouro>=20){ jogador.ouro-=20; jogador.arma="+2"; alert("Você comprou uma arma +2"); atualizarNome(); }
-else alert("Ouro insuficiente!");
-exibirOpcoes(["Continuar"],["loja"]);
-break;
-case "compraPocao":
-if(jogador.ouro>=10){ jogador.ouro-=10; jogador.pv+=10; alert("Você comprou uma poção +10 PV"); atualizarNome(); }
-else alert("Ouro insuficiente!");
-exibirOpcoes(["Continuar"],["loja"]);
-break;
-case "barganhar":
-if(jogador.ouro>=5){ jogador.ouro-=5; alert("Você conseguiu uma informação do NPC!"); atualizarNome(); }
-else alert("Ouro insuficiente!");
-exibirOpcoes(["Continuar"],["cidade"]);
-break;
-case "luta":
-alert("Sistema de combate em breve...");
-exibirOpcoes(["Voltar"],["iniciar"]);
-break;
-case "iniciar":
-document.getElementById("mensagem").innerText="Bem-vindo à cidade de Betsim. O território foi invadido e você deve reunir a chave da grande caverna para derrotar o dragão de Luparus.";
-exibirOpcoes(["Ir à cidade","Explorar floresta","Checar status"],["cidade","floresta","status"]);
-break;
-case "continuar":break;
+case "continuar": break;
 }
 }
 
-// ----------------- Combate -----------------
-function iniciarBatalha(){
-document.getElementById("telaJogo").classList.add("hidden");
-document.getElementById("telaBatalha").classList.remove("hidden");
-inimigo.pv=inimigo.vigor*10;
-jogador.pv=jogador.vigor*10;
-document.getElementById("mensagemBatalha").innerText=`Você encontra um ${inimigo.nome}! Prepare-se para lutar.\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}`;
-document.getElementById("rolagemDados").innerText="";
-document.getElementById("btnRolar").disabled=false;
-}
-
-function rolarDado(){
-if(rolando) return;
-rolando=true;
-document.getElementById("btnRolar").disabled=true;
-let display=document.getElementById("rolagemDados");
-let tempo=0;
-let intervalo=setInterval(()=>{
-let num=Math.floor(Math.random()*6)+1;
-display.innerText=num;
-tempo+=100;
-if(tempo>=4000){ // 4 segundos
-clearInterval(intervalo);
-resolverTurno(num);
-rolando=false;
-document.getElementById("btnRolar").disabled=false;
-}
-},100);
-}
-
-function resolverTurno(dado){
-let ataqueJogador=dado+jogador.destreza;
-let defesaInimigo=Math.floor(Math.random()*6+1)+inimigo.armadura;
-let dano=ataqueJogador-defesaInimigo;
-if(dano<0) dano=0;
-inimigo.pv-=dano;
-
-let ataqueInimigo=Math.floor(Math.random()*6+1)+inimigo.destreza;
-let defesaJogador=Math.floor(Math.random()*6+1)+jogador.armadura;
-let danoInimigo=ataqueInimigo-defesaJogador;
-if(danoInimigo<0) danoInimigo=0;
-jogador.pv-=danoInimigo;
-
-if(jogador.pv<=0){
-document.getElementById("mensagemBatalha").innerText=`Você foi derrotado pelo ${inimigo.nome}!`;
-document.getElementById("rolagemDados").innerText="";
-document.getElementById("btnRolar").disabled=true;
-} else if(inimigo.pv<=0){
-document.getElementById("mensagemBatalha").innerText=`Você derrotou o ${inimigo.nome}! PV restante: ${jogador.pv}`;
-document.getElementById("rolagemDados").innerText="";
-document.getElementById("btnRolar").disabled=true;
-} else{
-document.getElementById("mensagemBatalha").innerText=`Turno concluído!\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}\nRolar novamente para próximo ataque.`;
-}
-}
-
-function voltarJogo(){
-document.getElementById("telaBatalha").classList.add("hidden");
-document.getElementById("telaJogo").classList.remove("hidden");
+// ----------------- História inicial e conversas -----------------
+function historiasBetsim(){
+document.getElementById("mensagem").innerText="Você começa sua aventura na cidade de Betsim. O território norte foi invadido por Luparus. Sua missão é recuperar os fragmentos da chave e derrotar o dragão.";
 exibirOpcoes(["Ir à cidade","Explorar floresta","Checar status"],["cidade","floresta","status"]);
 }
+
 </script>
 </main>
 </body>
