@@ -1,812 +1,212 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>RPG Betsim — Missão da Chave</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPG Betsim - Aventura</title>
 <style>
-/* Design escuro, touch-friendly, mobile-first */
-*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Arial,sans-serif}
-body{background:#071623;color:#e6f2fb;padding-top:92px}
-header{position:fixed;top:0;left:0;width:100%;background:#0b2233;color:#fff;padding:10px 12px;z-index:300;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.header-left{display:flex;flex-direction:column;align-items:flex-start}
-.header-right{display:flex;gap:8px;align-items:center}
-.hudline{font-size:14px}
-.card{background:#0f2b3b;border-radius:12px;padding:16px;margin:12px auto;max-width:640px;box-shadow:0 8px 30px rgba(0,0,0,.6)}
-.title{font-size:18px;color:#dff3ff;margin-bottom:8px}
-.p{color:#cfeaf7;margin-bottom:10px;line-height:1.4}
-.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.btn{background:#1f4b63;color:#fff;border:none;padding:10px 12px;border-radius:10px;font-size:15px;cursor:pointer}
-.btn.secondary{background:#5b7f93}
-.btn.ghost{background:transparent;border:1px solid #2b5870;color:#d9f0ff}
-.btn.danger{background:#8b2e2e}
-.small{font-size:13px;color:#bfe6ff}
-.output{background:#07232b;padding:12px;border-radius:8px;max-height:340px;overflow:auto;color:#d9f5ff;margin-top:10px;white-space:pre-wrap}
-.hidden{display:none}
-.inv-list{list-style:none;padding-left:0}
-.attr-row{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0}
-.attr-row .label{width:30%}
-.attr-row .controls{display:flex;gap:6px;align-items:center}
-.footer{padding:14px;text-align:center;color:#9fc8df;font-size:13px}
-@media(max-width:520px){
-  .card{margin:8px;border-radius:10px;padding:12px}
-  .title{font-size:16px}
-  .btn{padding:9px 10px;font-size:14px}
-  header{padding:8px}
-}
+body {font-family:'Segoe UI',sans-serif; margin:0; padding:0; background:#f5f5f5; color:#333;}
+#hud {display:flex; justify-content:space-between; padding:10px; background:#ddd; font-weight:bold; flex-wrap:wrap;}
+#gameScreen {padding:10px;}
+button {margin:5px; padding:10px; border:none; border-radius:5px; background:#666; color:white; font-weight:bold;}
+button:hover{background:#444; cursor:pointer;}
+input {margin:5px; padding:5px; border-radius:3px; border:1px solid #ccc;}
+.hidden{display:none;}
+#inventory, #hand, #menu{border:1px solid #aaa; padding:5px; margin:5px; border-radius:5px; background:#eee;}
+#battleLog{border:1px solid #aaa; padding:5px; margin:5px; height:150px; overflow-y:auto; background:#fff;}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="header-left">
-    <div id="nomeHUD" class="hudline">Jogador</div>
-    <div id="abreviadoHUD" class="small">PV:0 Ouro:0 Mão:Vazio V(0) F(0) D(0) A(0) XP:0/100 N:1</div>
-  </div>
-  <div class="header-right">
-    <button class="btn" onclick="abrirPerfil()">Perfil</button>
-    <button class="btn" onclick="toggleMenu()">Menu</button>
-  </div>
-</header>
-
-<!-- Menu lateral -->
-<div id="menuBox" class="card hidden" style="position:fixed;right:12px;top:64px;z-index:400;max-width:320px">
-  <div class="title">Menu</div>
-  <div class="controls">
-    <button class="btn" onclick="pauseGame()">Pause</button>
-    <button class="btn" onclick="saveAndQuit()">Sair (apagar ficha)</button>
-    <button class="btn" onclick="reiniciarFicha()">Reiniciar Ficha</button>
-    <button class="btn" onclick="toggleMenu()">Fechar</button>
-  </div>
+<div id="hud" class="hidden">
+<span id="playerName"></span>
+<span id="playerStats"></span>
+<span id="playerPV"></span>
+<span id="playerXP"></span>
+<span id="playerGold"></span>
+<span id="playerHand"></span>
+<button onclick="openMenu()">Menu</button>
 </div>
 
-<main>
-  <!-- Tela inicial / criar ficha -->
-  <section id="screen-start" class="card">
-    <div class="title">RPG Betsim — Missão da Chave</div>
-    <p class="p">O Rei Robert chama você para uma aventura: reunir os 4 fragmentos da chave da grande caverna e derrotar o dragão Luparus. Crie sua ficha para começar.</p>
-    <div class="controls">
-      <button class="btn" onclick="showScreen('screen-create')">Criar Ficha</button>
-      <button class="btn" id="btnContinue" onclick="resumeSaved()" style="display:none">Continuar Jogo Salvo</button>
-    </div>
-    <div id="startHint" class="small" style="margin-top:10px">Salve a ficha no navegador para continuar depois.</div>
-  </section>
+<div id="gameScreen">
+  <div id="startScreen">
+    <h1>RPG Betsim - Aventura</h1>
+    <button onclick="startCharacterCreation()">Criar Ficha</button>
+  </div>
 
-  <!-- Criação de personagem -->
-  <section id="screen-create" class="card hidden">
-    <div class="title">Criação de Personagem</div>
-    <div class="p">Distribua <strong>10 pontos</strong> entre Vigor (V), Força (F), Destreza (D) e Armadura (A). PV = Vigor × 10.</div>
+  <div id="createScreen" class="hidden">
+    <h2>Criar Ficha</h2>
+    <label>Nome: <input type="text" id="charName"></label><br>
+    <label>Distribua 10 pontos:</label><br>
+    Vigor <span id="vigorValue">0</span> <button onclick="addPoint('vigor')">+</button><br>
+    Força <span id="forcaValue">0</span> <button onclick="addPoint('forca')">+</button><br>
+    Destreza <span id="destrezaValue">0</span> <button onclick="addPoint('destreza')">+</button><br>
+    Armadura <span id="armaduraValue">0</span> <button onclick="addPoint('armadura')">+</button><br>
+    <button onclick="finishCharacter()">Finalizar Ficha</button>
+  </div>
 
-    <div class="attr-row">
-      <div class="label small">Nome</div>
-      <div style="flex:1"><input id="inputName" style="width:100%;padding:8px;border-radius:8px;border:1px solid #1f5b72;background:#06202a;color:#e8f9ff" placeholder="Digite seu nome"/></div>
-    </div>
+  <div id="gameplay" class="hidden">
+    <div id="locationScreen"></div>
+    <div id="battleLog" class="hidden"></div>
+  </div>
 
-    <div id="attrList">
-      <div class="attr-row"><div class="label small">Vigor (V)</div>
-        <div class="controls"><button class="btn" onclick="changeAttr('vigor',-1)">-</button><div id="vigorVal" class="small">3</div><button class="btn" onclick="changeAttr('vigor',1)">+</button></div>
-      </div>
-      <div class="attr-row"><div class="label small">Força (F)</div>
-        <div class="controls"><button class="btn" onclick="changeAttr('forca',-1)">-</button><div id="forcaVal" class="small">3</div><button class="btn" onclick="changeAttr('forca',1)">+</button></div>
-      </div>
-      <div class="attr-row"><div class="label small">Destreza (D)</div>
-        <div class="controls"><button class="btn" onclick="changeAttr('destreza',-1)">-</button><div id="destrezaVal" class="small">2</div><button class="btn" onclick="changeAttr('destreza',1)">+</button></div>
-      </div>
-      <div class="attr-row"><div class="label small">Armadura (A)</div>
-        <div class="controls"><button class="btn" onclick="changeAttr('armadura',-1)">-</button><div id="armaduraVal" class="small">2</div><button class="btn" onclick="changeAttr('armadura',1)">+</button></div>
-      </div>
-    </div>
+  <div id="menuScreen" class="hidden">
+    <button onclick="resumeGame()">Continuar</button>
+    <button onclick="restartGame()">Reiniciar Jogo</button>
+    <button onclick="exitGame()">Sair do Jogo</button>
+  </div>
 
-    <div style="margin-top:8px" class="small">Pontos restantes: <span id="pointsLeft">0</span></div>
-
-    <div class="controls" style="margin-top:12px">
-      <button class="btn" onclick="saveCharacter()">Salvar Ficha</button>
-      <button class="btn" onclick="showScreen('screen-start')">Voltar</button>
-    </div>
-    <div id="createMsg" class="small" style="margin-top:8px;color:#c6e9ff"></div>
-  </section>
-
-  <!-- Jogo principal -->
-  <section id="screen-game" class="card hidden">
-    <div class="title">Aventura</div>
-    <div id="mainText" class="p">Bem-vindo — seu destino começa agora.</div>
-
-    <div id="opcoes" class="controls"></div>
-
-    <div id="log" class="output"></div>
-  </section>
-
-  <!-- Batalha -->
-  <section id="screen-battle" class="card hidden">
-    <div class="title">BATALHA</div>
-    <div id="battleInfo" class="p"></div>
-    <div id="diceOutput" class="output"></div>
-    <div class="controls">
-      <button class="btn" id="btnAttack" onclick="playerAttack()">Atacar</button>
-      <button class="btn" onclick="playerDefend()">Defender</button>
-      <button class="btn" onclick="tryFlee()">Fugir</button>
-      <button class="btn btn-danger hidden" id="btnPropinaBattle" onclick="usePropinaBattle()">Dar Propina (2 ouro)</button>
-    </div>
-  </section>
-
-  <!-- Perfil & Inventário -->
-  <section id="screen-profile" class="card hidden">
-    <div class="title">Perfil</div>
-    <div id="profileBox" class="p small"></div>
-
-    <div style="margin-top:8px">
-      <div class="small">Inventário (3 slots)</div>
-      <ul id="inventoryList" class="inv-list small"></ul>
-    </div>
-
-    <div class="controls" style="margin-top:8px">
-      <button class="btn" onclick="openPlaceInHand()">Colocar item na mão</button>
-      <button class="btn" onclick="useItemInHand()">Usar item na mão</button>
-      <button class="btn btn-danger" onclick="dropItemInHand()">Descartar item na mão</button>
-      <button class="btn" onclick="showScreen('screen-game')">Voltar</button>
-    </div>
-  </section>
-
-  <!-- Final (heróico) -->
-  <section id="screen-final" class="card hidden">
-    <div class="title">Final — A Coroação</div>
-    <div id="finalText" class="p"></div>
-    <div class="controls"><button class="btn" onclick="restartAfterVictory()">Recomeçar (Nova Ficha)</button></div>
-  </section>
-
-  <div class="footer">Mobile-friendly — toque os botões para jogar. Salve no navegador para continuar.</div>
-</main>
+</div>
 
 <script>
-/* ========= GAME ENGINE (all-in-one) =========
-   Features:
-   - Create character with 10 points (Vigor, Força, Destreza, Armadura)
-   - HUD: PV, Ouro, Mão, abbreviated attributes, XP, Level
-   - Inventory 3 slots + hand (mão)
-   - Shop (only in city)
-   - Exploration (city, forest, ruins, mountain, cave) with narrative and choices
-   - Battles with dice animation (~4s), attack/defense, damage, turn flow
-   - XP system dynamic per enemy/action; level progression thresholds
-   - Easter egg propina: activation rule and use (2 gold), doubles XP for that action; in battle causes flee + lose 1 level
-   - Save/load with localStorage
-   =============================================*/
-
-// -- Save key
-const SAVE_KEY = 'betsim_rpg_save_v1';
-
-// -- Player defaults
+// --- Player inicial ---
 let player = {
-  name: '',
-  vigor: 3, // V
-  forca: 3, // F (base)
-  destreza: 2, // D
-  armadura: 2, // A
-  pv: 30,
-  pvMax: 30,
-  ouro: 50,
-  inventario: [null,null,null],
-  mao: null, // item in hand, e.g. 'Espada +2','Poção','ouro'
-  nivel: 1,
-  xp: 0,
-  xpNext: 100, // threshold for next level
-  fragments: [false,false,false,false], // 4 parts
-  propinaUnlocked: false // easter egg activation
+    name:'',
+    vigor:0,
+    forca:0,
+    destreza:0,
+    armadura:0,
+    pv:0,
+    gold:50,
+    xp:0,
+    level:1,
+    hand:null,
+    weapon:null,
+    inventory:[null,null,null]
 };
 
-// -- State
-let STATE = {
-  currentScreen: 'start',
-  inBattle: false,
-  enemy: null,
-  diceTimer: null,
-  diceRunning: false,
-  inConversation: false,
-  lastActionContext: null // 'battle' or 'conversation' or 'explore'
-};
+let totalPoints = 10;
+let exploredLocations = {};
+let propinaBonusActive = false;
 
-/* ---------- UTIL: Save / Load ---------- */
-function saveGame(){
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(player)); } catch(e){ console.warn('save failed', e); }
-}
-function loadGame(){
-  try{
-    const raw = localStorage.getItem(SAVE_KEY);
-    if(!raw) return false;
-    const obj = JSON.parse(raw);
-    Object.assign(player, obj);
-    player.pv = Number(player.pv) || player.vigor*10;
-    player.pvMax = player.vigor*10;
-    // ensure arrays length
-    player.inventario = player.inventario || [null,null,null];
-    player.fragments = player.fragments || [false,false,false,false];
-    return true;
-  }catch(e){ console.warn('load failed', e); return false; }
+// --- Criação de ficha ---
+function startCharacterCreation(){
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('createScreen').classList.remove('hidden');
 }
 
-/* ---------- UI helpers ---------- */
-function showScreen(id){
-  const screens = ['screen-start','screen-create','screen-game','screen-battle','screen-profile','screen-final'];
-  screens.forEach(s=>document.getElementById(s).classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-  STATE.currentScreen = id;
-  // update HUD always
-  updateHUD();
-  // update propina UI
-  maybeShowPropinaUI();
+function addPoint(attr){
+    let sum = player.vigor + player.forca + player.destreza + player.armadura;
+    if(sum >= totalPoints) return alert('Todos os pontos distribuídos');
+    player[attr]++;
+    document.getElementById(attr+'Value').innerText = player[attr];
 }
-function log(text){
-  const out = document.getElementById('log');
-  out.innerHTML += `<div>${escapeHtml(text)}</div>`;
-  out.scrollTop = out.scrollHeight;
-}
-function setMainText(txt){ document.getElementById('mainText').innerText = txt; }
-function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* ---------- HUD and Profile ---------- */
+function finishCharacter(){
+    const name = document.getElementById('charName').value;
+    if(!name) return alert('Digite o nome do personagem');
+    const sum = player.vigor + player.forca + player.destreza + player.armadura;
+    if(sum < totalPoints) return alert('Distribua todos os pontos');
+    player.name = name;
+    player.pv = player.vigor * 10;
+    document.getElementById('createScreen').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    document.getElementById('gameplay').classList.remove('hidden');
+    updateHUD();
+    startAdventure();
+}
+
+// --- HUD ---
 function updateHUD(){
-  const abrv = `PV:${player.pv} Ouro:${player.ouro} Mão:${player.mao||'Vazio'} V(${player.vigor}) F(${player.forca}) D(${player.destreza}) A(${player.armadura}) XP:${player.xp}/${player.xpNext} N:${player.nivel}`;
-  document.getElementById('nomeHUD').innerText = player.name || 'Jogador';
-  document.getElementById('abreviadoHUD').innerText = abrv;
-  // profile
-  const profile = document.getElementById('profileBox');
-  profile.innerHTML = `<div><strong>${escapeHtml(player.name||'Jogador')}</strong> — Nv ${player.nivel} XP:${player.xp}/${player.xpNext}</div>
-    <div class="small">PV: ${player.pv}/${player.pvMax}</div>
-    <div class="small">V:${player.vigor} F:${player.forca} D:${player.destreza} A:${player.armadura}</div>
-    <div class="small">Ouro: <span style="color:#f6d365;cursor:pointer" onclick="goldClicked()">${player.ouro}</span></div>
-    <div class="small">Mão: ${player.mao||'Vazio'}</div>`;
-  // inventory list
-  const inv = document.getElementById('inventoryList');
-  inv.innerHTML = '';
-  player.inventario.forEach((it,i)=>{
-    const li = document.createElement('li');
-    li.style.marginBottom = '8px';
-    li.innerHTML = `<span>${i+1}: ${it||'Vazio'}</span> <button class="btn" onclick="putHandFromSlot(${i})">Colocar</button> <button class="btn" onclick="discardSlot(${i})">Descartar</button>`;
-    inv.appendChild(li);
-  });
-  saveGame();
-  // control continue button on start screen
-  if(STATE.currentScreen!=='screen-start'){
-    document.getElementById('btnContinue').style.display = loadGame() ? 'inline-block' : 'none';
-  } else {
-    document.getElementById('btnContinue').style.display = loadGame() ? 'inline-block' : 'none';
-  }
+    document.getElementById('playerName').innerText = player.name;
+    document.getElementById('playerPV').innerText = `PV: ${player.pv}`;
+    document.getElementById('playerGold').innerText = `Ouro: ${player.gold}`;
+    document.getElementById('playerXP').innerText = `XP: ${player.xp}`;
+    document.getElementById('playerStats').innerText = `F(${player.forca + (player.weapon?player.weapon.forceBonus:0)}), V(${player.vigor}), D(${player.destreza}), A(${player.armadura})`;
+    document.getElementById('playerHand').innerText = `Mão: ${player.hand ? player.hand.name : 'vazio'}`;
 }
 
-/* ---------- Character creation ---------- */
-let createPoints = 10;
-function initCreateDefaults(){
-  // default starting values
-  document.getElementById('inputName').value = player.name || '';
-  player.vigor = player.vigor || 3;
-  player.forca = player.forca || 3;
-  player.destreza = player.destreza || 2;
-  player.armadura = player.armadura || 2;
-  // calculate used points and set remaining
-  let used = player.vigor + player.forca + player.destreza + player.armadura;
-  createPoints = Math.max(0, 10 - (used - 0)); // if loaded from save maybe >10 so show 0
-  // set UI
-  document.getElementById('vigorVal').innerText = player.vigor;
-  document.getElementById('forcaVal').innerText = player.forca;
-  document.getElementById('destrezaVal').innerText = player.destreza;
-  document.getElementById('armaduraVal').innerText = player.armadura;
-  document.getElementById('pointsLeft').innerText = createPoints;
+// --- Menu ---
+function openMenu(){
+    document.getElementById('menuScreen').classList.remove('hidden');
 }
-function changeAttr(attr, delta){
-  // attr: 'vigor','forca','destreza','armadura'
-  if(delta>0){
-    if(createPoints<=0) return;
-    player[attr] = (player[attr]||0) + 1;
-    createPoints--;
-  } else {
-    if((player[attr]||0) <= 0) return;
-    player[attr] = (player[attr]||0) - 1;
-    createPoints++;
-  }
-  // update UI values
-  document.getElementById(attr+'Val').innerText = player[attr];
-  document.getElementById('pointsLeft').innerText = createPoints;
+function resumeGame(){
+    document.getElementById('menuScreen').classList.add('hidden');
 }
-function saveCharacter(){
-  const name = document.getElementById('inputName').value.trim();
-  if(!name) return alert('Digite um nome.');
-  if(createPoints>0) return alert('Distribua todos os 10 pontos antes de salvar.');
-  player.name = name;
-  player.pvMax = player.vigor*10;
-  player.pv = player.pvMax;
-  // ensure xpNext consistent
-  if(!player.xpNext) player.xpNext = 100;
-  saveGame();
-  updateHUD();
-  showScreen('screen-game');
-  log(`Ficha salva. Bem-vindo, ${player.name}!`);
-  startIntro();
+function restartGame(){
+    location.reload();
 }
-
-/* ---------- Menu handling ---------- */
-function toggleMenu(){ document.getElementById('menuBox').classList.toggle('hidden'); }
-function pauseGame(){ alert('Jogo pausado.'); toggleMenu(); }
-function saveAndQuit(){ if(confirm('Sair apagará a ficha salva. Confirmar?')){ localStorage.removeItem(SAVE_KEY); location.reload(); } }
-function reiniciarFicha(){ if(confirm('Reiniciar ficha? Todos os dados serão apagados.')){ localStorage.removeItem(SAVE_KEY); location.reload(); } }
-
-/* ---------- Intro / world navigation ---------- */
-function startIntro(){
-  setMainText(`O Rei Robert envia mensageiros... Sua missão: encontrar os 4 fragmentos da chave e derrotar o Dragão Luparus.`);
-  showExploreOptions();
-}
-function setMainText(t){ document.getElementById('mainText').innerText = t; }
-function showExploreOptions(){
-  STATE.inBattle=false; STATE.inConversation=false; STATE.lastActionContext=null;
-  const op = document.getElementById('opcoes');
-  op.innerHTML = '';
-  addOption('Ir à Cidade', goCity);
-  addOption('Explorar Floresta', goForest);
-  addOption('Explorar Ruínas', goRuins);
-  addOption('Subir Montanha', goMountain);
-  addOption('Entrar na Grande Caverna (chefe final — requer 3 fragmentos)', goCave);
-  addOption('Checar Perfil / Inventário', ()=>showScreen('screen-profile'));
-  maybeShowPropinaUI();
-}
-function addOption(label, fn){ const btn = document.createElement('button'); btn.className='btn'; btn.innerText=label; btn.onclick=fn; document.getElementById('opcoes').appendChild(btn); }
-
-/* ---------- Locations & Narrative ---------- */
-function goCity(){
-  STATE.inConversation=true; STATE.lastActionContext='conversation';
-  setMainText('Você chega à cidade de Betsim: mercado, taverna e uma velha biblioteca.\nO que deseja fazer?');
-  const op=document.getElementById('opcoes'); op.innerHTML='';
-  addOption('Visitar Loja', visitShop);
-  addOption('Conversar com um aldeão', talkVillager);
-  addOption('Ir à Biblioteca (pistas)', library);
-  addOption('Voltar', showExploreOptions);
-  maybeShowPropinaUI();
-}
-function visitShop(){
-  setMainText('🛒 Loja: o mercador oferece Espada +2 (20 ouro) e Poção (+10PV) (10 ouro).');
-  const op=document.getElementById('opcoes'); op.innerHTML='';
-  addOption('Comprar Espada +2 (20 ouro)', ()=>buyItem('Espada +2',20));
-  addOption('Comprar Poção (10 ouro)', ()=>buyItem('Poção',10));
-  addOption('Voltar', goCity);
-}
-function buyItem(item,cost){
-  if(player.ouro < cost) return log('❌ Ouro insuficiente.');
-  const slot = player.inventario.indexOf(null);
-  if(slot === -1) return log('Inventário cheio.');
-  player.inventario[slot] = item;
-  player.ouro -= cost;
-  saveGame(); updateHUD();
-  log(`✅ Comprou ${item}.`);
-  visitShop();
-}
-function talkVillager(){
-  setMainText('🧑‍🌾 Aldeão diz: "Ouvi sobre um fragmento nas ruínas ao norte. Cuidado."');
-  const op=document.getElementById('opcoes'); op.innerHTML='';
-  addOption('Perguntar por mais (pode custar 5 ouro)', ()=>{
-    if(player.ouro>=5){ player.ouro-=5; log('Você paga 5 ouro. O aldeão conta: "Procure o altar das ruínas."'); updateHUD(); } else log('Você não tem 5 ouro.');
-    addOption('Voltar', goCity);
-  });
-  addOption('Voltar', goCity);
-  maybeShowPropinaUI();
-}
-function library(){
-  setMainText('📚 Biblioteca: mapas antigos mostram trilhas. Você descobre uma pista — +30 XP por descoberta.');
-  gainXP(30, 'descoberta');
-  const op=document.getElementById('opcoes'); op.innerHTML='';
-  addOption('Voltar', goCity);
-}
-function goForest(){
-  setMainText('🌲 Floresta: sombras entre as árvores. Algo se move...');
-  startEncounter({name:'Goblin Sentinela', level:1, pv:18, arm:2, str:3, dex:2, xpMin:8, xpMax:12, fragmentDrop:0});
-}
-function goRuins(){
-  setMainText('🏛 Ruínas: inscrições, altar e armadilhas.');
-  const op=document.getElementById('opcoes'); op.innerHTML='';
-  addOption('Examinar altar', ()=> {
-    // chance e puzzle
-    if(Math.random() < 0.6){
-      log('✅ Você encontrou um compartimento com um fragmento da chave!');
-      giveFragment(1);
-      gainXP(250, 'artifact');
-    } else {
-      log('❌ Uma armadilha ativa: aparece um Guardião das Ruínas!');
-      startEncounter({name:'Guardião das Ruínas', level:3, pv:30, arm:4, str:4, dex:3, xpMin:40, xpMax:60, fragmentDrop:-1});
+function exitGame(){
+    if(confirm('Deseja realmente sair? Toda ficha será perdida.')){
+        location.reload();
     }
-  });
-  addOption('Voltar', showExploreOptions);
-}
-function goMountain(){
-  setMainText('⛰️ Montanha: vento frio e um lobo alfa bloqueia a trilha.');
-  startEncounter({name:'Lobo Alfa', level:2, pv:26, arm:3, str:4, dex:3, xpMin:25, xpMax:40, fragmentDrop:2});
-}
-function goCave(){
-  // require at least 3 fragments
-  const have = player.fragments.filter(Boolean).length;
-  if(have < 3){ setMainText('🔒 A câmara interior está selada. Você precisa de 3 fragmentos para entrar.'); addOption('Voltar', showExploreOptions); return; }
-  // boss fight
-  setMainText('🕳️ A câmara se abre — o Dragão Luparus ruge!');
-  startEncounter({name:'Dragão Luparus', level:6, pv:160, arm:8, str:8, dex:5, xpMin:600, xpMax:800, fragmentDrop:3, boss:true});
 }
 
-/* ---------- Inventory and Hand ---------- */
-function putHandFromSlot(slot){
-  if(!player.inventario[slot]) return alert('Slot vazio');
-  player.mao = player.inventario[slot];
-  player.inventario[slot] = null;
-  log(`Você colocou ${player.mao} na mão.`);
-  saveGame(); updateHUD();
-  maybeShowPropinaUI();
-}
-function discardSlot(slot){
-  if(!player.inventario[slot]) return alert('Slot vazio');
-  if(confirm('Descartar item permanentemente?')){
-    log(`Descartou ${player.inventario[slot]}.`);
-    if(player.mao === player.inventario[slot]) player.mao = null;
-    player.inventario[slot] = null;
-    saveGame(); updateHUD();
-  }
-}
-function openPlaceInHand(){
-  // prompt somente mostra slots de inventário
-  const choice = prompt('Colocar na mão: digite slot 1-3 para mover item.');
-  if(!choice) return;
-  const idx = Number(choice)-1;
-  if(isNaN(idx) || idx<0 || idx>2) return alert('Entrada inválida');
-  putHandFromSlot(idx);
-}
-    return;
-  }
-  const idx = Number(choice)-1;
-  if(isNaN(idx) || idx<0 || idx>2) return alert('Entrada inválida');
-  putHandFromSlot(idx);
-}
-function useItemInHand(){
-  if(!player.mao) return alert('Nada na mão.');
-  if(player.mao === 'Poção'){
-    player.pv = Math.min(player.pv + 10, player.pvMax);
-    // remove consumed potion if exists in inventory also remove reference
-    const invIdx = player.inventario.indexOf('Poção');
-    if(invIdx>=0) player.inventario[invIdx] = null;
-    player.mao = null;
-    log('Usou Poção: +10 PV');
-    saveGame(); updateHUD();
-  } else if(player.mao && player.mao.includes('Espada')){
-    alert('Espada equipada — fornece bônus passivo na batalha.');
-  } else if(player.mao==='ouro'){
-    alert('Ouro na mão — pode ser usado para propina (quando desbloqueado).');
-  } else {
-    alert('Item na mão não utilizável diretamente.');
-  }
-}
-function dropItemInHand(){
-  if(!player.mao) return alert('Nada na mão.');
-  if(confirm('Descartar item da mão?')){
-    log(`Descartou ${player.mao} da mão.`);
-    player.mao = null;
-    saveGame(); updateHUD();
-  }
-}
-
-/* ---------- Propina (easter egg) ---------- */
-/*
- Activation:
-  - Player must click on the gold display (goldClicked())
-  - Must be in conversation OR in battle (context)
-  - Player's ouro must be <= 20
-  - If conditions met => unlock propina; message shown
- Use:
-  - Put ouro in hand (openPlaceInHand -> 'ouro')
-  - When in battle or conversation and mao==='ouro' and propinaUnlocked => show action Dar Propina (2 ouro)
-  - Use in battle: player loses 1 level, flees immediately, message "Você é um frouxo!"
-  - Use in conversation: NPC reveals privileged info; also grants doubled XP for that action
-  - Each propina use costs 2 ouro
-*/
-function goldClicked(){
-  if((STATE.inBattle || STATE.inConversation) && player.ouro <= 20 && !player.propinaUnlocked){
-    player.propinaUnlocked = true;
-    log('✨ Easter egg: Propina desbloqueada! Agora você pode usar ouro na mão para dar propina (2 ouro).');
-    saveGame(); updateHUD();
-    maybeShowPropinaUI();
-  } else {
-    log(`💰 Ouro atual: ${player.ouro}`);
-  }
-}
-function maybeShowPropinaUI(){
-  const show = player.propinaUnlocked && player.mao==='ouro' && (STATE.inBattle || STATE.inConversation);
-  // show battle propina if in battle screen
-  const btnB = document.getElementById('btnPropinaBattle');
-  if(btnB) btnB.classList.toggle('hidden', !show);
-  // in options area (conversation) add propina action
-  const op = document.getElementById('opcoes');
-  const existing = document.getElementById('action-propina');
-  if(existing) existing.remove();
-  if(show && !STATE.inBattle){
-    const b = document.createElement('button'); b.id='action-propina'; b.className='btn'; b.innerText='Dar propina (2 ouro)'; b.onclick = usePropinaConversation;
-    op.appendChild(b);
-  }
-}
-
-/* Use propina in conversation */
-function usePropinaConversation(){
-  if(player.ouro < 2) return log('❌ Ouro insuficiente para propina.');
-  player.ouro -= 2;
-  // privileged info - example: point to fragment
-  log('💸 Você dá propina. O NPC sussurra: "Ouvi dizer que uma parte da chave está escondida no altar das ruínas ao norte."');
-  // double XP for next relevant action - we will set a flag to double next XP gain
-  player._propinaDoubleNext = true;
-  saveGame(); updateHUD();
-  maybeShowPropinaUI();
-}
-/* Use propina in battle */
-function usePropinaBattle(){
-  if(player.ouro < 2) return log('❌ Ouro insuficiente para propina.');
-  player.ouro -= 2;
-  player.nivel = Math.max(1, player.nivel-1);
-  log('💸 Você subornou e fugiu! Você é um frouxo e perde 1 nível.');
-  // escape battle immediately
-  STATE.inBattle = false;
-  STATE.enemy = null;
-  player.mao = null; // hand emptied
-  saveGame(); updateHUD();
-  showScreen('screen-game');
-  showExploreOptions();
-}
-
-/* ---------- Combat system ---------- */
-function startEncounter(enemyTemplate){
-  // enemyTemplate: {name, level, pv, arm, str, dex, xpMin, xpMax, fragmentDrop, boss}
-  STATE.inBattle = true;
-  STATE.enemy = Object.assign({}, enemyTemplate);
-  // show battle screen
-  document.getElementById('diceOutput').innerText = '';
-  document.getElementById('battleInfo').innerText = `Inimigo: ${STATE.enemy.name} — PV: ${STATE.enemy.pv}`;
-  showScreen('screen-battle');
-  // show/hide propina button if applicable
-  maybeShowPropinaUI();
-  // set last action context
-  STATE.lastActionContext = 'battle';
-  log(`⚔️ Você encontrou: ${STATE.enemy.name}`);
-}
-/* Dice animation helper (returns promise resolved with number 1-6 after duration) */
-function diceAnimate(duration=3500){
-  return new Promise((resolve)=>{
-    if(STATE.diceRunning) return resolve(1);
-    STATE.diceRunning = true;
-    const el = document.getElementById('diceOutput');
-    el.innerText = 'Rolando dado...';
-    let last = 1;
-    const interval = 80;
-    const ticks = Math.max(1, Math.floor(duration/interval));
-    let count = 0;
-    const t = setInterval(()=>{
-      last = Math.floor(Math.random()*6)+1;
-      el.innerText = `... ${last} ...`;
-      count++;
-      if(count >= ticks){
-        clearInterval(t);
-        STATE.diceRunning = false;
-        el.innerText = `Resultado: ${last}`;
-        resolve(last);
-      }
-    }, interval);
-  });
-}
-async function playerAttack(){
-  if(!STATE.inBattle || !STATE.enemy) return;
-  // require weapon in hand? allow attack but weapon adds bonus
-  const weaponBonus = (player.mao && player.mao.includes('Espada')) ? 2 : 0;
-  document.getElementById('btnAttack').disabled = true;
-  log('Você prepara o ataque...');
-  const roll = await diceAnimate(3500);
-  const atk = roll + player.destreza + weaponBonus;
-  appendDiceLog(`Você ataca: Dado ${roll} + Destreza(${player.destreza})${weaponBonus?` + Espada(${weaponBonus})`:''} = ${atk}`);
-  // enemy defense roll
-  const defRoll = Math.floor(Math.random()*6)+1;
-  const def = defRoll + (STATE.enemy.arm || STATE.enemy.armadura || 0);
-  appendDiceLog(`${STATE.enemy.name} defende: Dado ${defRoll} + Armadura(${STATE.enemy.arm || STATE.enemy.armadura || 0}) = ${def}`);
-  const damage = Math.max(0, atk - def);
-  STATE.enemy.pv -= damage;
-  appendDiceLog(`Dano causado: ${damage}. PV inimigo: ${Math.max(0, STATE.enemy.pv)}`);
-  if(STATE.enemy.pv <= 0){
-    // enemy defeated
-    const xpGain = calcEnemyXP(STATE.enemy);
-    gainXP(xpGain, 'enemy');
-    // fragment drop handling
-    if(typeof STATE.enemy.fragmentDrop === 'number' && STATE.enemy.fragmentDrop >=0){
-      if(!player.fragments[STATE.enemy.fragmentDrop]){
-        player.fragments[STATE.enemy.fragmentDrop] = true;
-        log(`🔷 Você obteve um fragmento da chave (Parte ${STATE.enemy.fragmentDrop+1})!`);
-        // grant artifact XP
-        gainXP(250, 'artifact');
-      }
+// --- Sistema de XP ---
+function gainXP(sourceType, value, extraData=null){
+    let xpGain = value;
+    if(sourceType==='explore'){
+        const loc = extraData;
+        if(exploredLocations[loc]) return;
+        exploredLocations[loc] = true;
+        alert(`Você ganhou ${xpGain} XP explorando ${loc}!`);
     }
-    // if boss death -> final
-    if(STATE.enemy.boss){
-      log('🔥 Você derrotou o Dragão Luparus! A cidade celebra.');
-      showFinalVictory();
-      return;
+    if(sourceType==='propina' && propinaBonusActive){
+        xpGain *= 2;
+        alert(`XP dobrado por propina! Você ganhou ${xpGain} XP.`);
     }
-    // finish battle
-    STATE.inBattle=false; STATE.enemy=null;
-    saveGame(); updateHUD();
-    log('Vitória! Voltando à exploração.');
-    showScreen('screen-game');
-    showExploreOptions();
-    return;
-  }
-  // enemy turn
-  setTimeout(()=>enemyAttack(), 900);
-}
-function appendDiceLog(txt){
-  const el = document.getElementById('diceOutput');
-  el.innerText += (el.innerText?'\n':'') + txt;
-  el.scrollTop = el.scrollHeight;
-}
-async function enemyAttack(){
-  if(!STATE.inBattle || !STATE.enemy) return;
-  appendDiceLog(`${STATE.enemy.name} prepara ataque...`);
-  const roll = await diceAnimate(3000);
-  const atk = roll + (STATE.enemy.dex || STATE.enemy.destreza || 0) + (STATE.enemy.str || STATE.enemy.forca || 0);
-  appendDiceLog(`${STATE.enemy.name} ataca: Dado ${roll} + Força(${STATE.enemy.str || STATE.enemy.forca || 0}) = ${atk}`);
-  const defRoll = Math.floor(Math.random()*6)+1;
-  const defense = defRoll + player.armadura;
-  appendDiceLog(`Você defende: Dado ${defRoll} + Armadura(${player.armadura}) = ${defense}`);
-  const dmg = Math.max(0, atk - defense);
-  // if player was defending reduce damage
-  if(player._defending){ player._defending=false; const reduced = Math.floor(dmg/2); player.pv -= reduced; appendDiceLog(`Defesa ativa! Dano reduzido a ${reduced}`); }
-  else { player.pv -= dmg; appendDiceLog(`Você recebeu ${dmg} de dano.`); }
-  updateHUD();
-  saveGame();
-  if(player.pv <= 0){
-    log('💀 Você foi derrotado!'); // penalties
-    // simple penalty: lose some gold
-    const lost = Math.min(player.ouro, 10);
-    player.ouro -= lost;
-    player.pv = Math.max(1, Math.floor(player.pvMax/2));
-    STATE.inBattle = false; STATE.enemy = null;
-    saveGame(); updateHUD();
-    showScreen('screen-game');
-    showExploreOptions();
-  } else {
-    // continue battle (player turn)
-    maybeShowPropinaUI();
-  }
-}
-function playerDefend(){
-  if(!STATE.inBattle) return;
-  player._defending = true;
-  appendDiceLog('Você se prepara para defender (metade do dano no próximo ataque).');
-  maybeShowPropinaUI();
-}
-function tryFlee(){
-  if(!STATE.inBattle) return;
-  const chance = Math.random();
-  if(chance < 0.6){
-    log('Você fugiu com sucesso!');
-    STATE.inBattle = false; STATE.enemy = null;
-    showScreen('screen-game'); showExploreOptions();
-  } else {
-    log('Fuga falhou! O inimigo ataca.');
-    enemyAttack();
-  }
-}
-
-/* ---------- XP system ---------- */
-/* XP rules:
-   - enemy xp dynamic: based on enemy.level or xpMin/xpMax range
-   - artifacts grant big XP (250)
-   - discovery, conversation success grant small XP
-   - propina doubles XP gained for that action if propina flag set
-*/
-function calcEnemyXP(enemy){
-  if(enemy.xpMin && enemy.xpMax){
-    return Math.floor(Math.random() * (enemy.xpMax - enemy.xpMin +1)) + enemy.xpMin;
-  } else if(enemy.level){
-    return enemy.level * 10 + Math.floor(Math.random()*6);
-  } else {
-    return 20 + Math.floor(Math.random()*10);
-  }
-}
-function gainXP(amount, reason){
-  // if propina double flag active then double and then clear flag
-  let gained = Number(amount) || 0;
-  if(player._propinaDoubleNext){
-    gained *= 2;
-    player._propinaDoubleNext = false;
-    log(`✨ Propina ativo: XP dobrado para esta ação!`);
-  }
-  player.xp += gained;
-  log(`+${gained} XP (${reason}).`);
-  // level up checks: thresholds scale: 1:100,2:250,3:500,4:1000 then *2
-  checkLevelUp();
-  saveGame(); updateHUD();
+    player.xp += xpGain;
+    updateHUD();
+    checkLevelUp();
 }
 function checkLevelUp(){
-  // We will allow multiple levels if xp high enough
-  while(player.xp >= player.xpNext){
-    player.xp -= player.xpNext;
-    player.nivel += 1;
-    // increase xpNext dynamically
-    if(player.xpNext < 1000) {
-      if(player.xpNext === 100) player.xpNext = 250;
-      else if(player.xpNext === 250) player.xpNext = 500;
-      else if(player.xpNext === 500) player.xpNext = 1000;
-      else player.xpNext = Math.floor(player.xpNext * 2);
-    } else {
-      player.xpNext = Math.floor(player.xpNext * 2);
+    let nextXP = getXPForNextLevel(player.level);
+    if(player.xp >= nextXP){
+        player.level++;
+        player.xp -= nextXP;
+        alert(`Parabéns! Subiu para o nível ${player.level}!`);
+        allocateAttributePoint();
+        updateHUD();
+        checkLevelUp();
     }
-    // rewards: +1 each attribute, +10 pvMax and +5 gold
-    player.forca +=1; player.vigor +=1; player.destreza +=1; player.armadura +=1;
-    player.pvMax += 10; player.pv += 10; player.ouro += 5;
-    log(`🎉 Subiu para o Nível ${player.nivel}! Atributos aumentaram.`);
-  }
+}
+function getXPForNextLevel(level){
+    return Math.floor(100 * Math.pow(1.5, level-1));
+}
+function allocateAttributePoint(){
+    const attr = prompt(`Distribua 1 ponto em: vigor, forca, destreza ou armadura`).toLowerCase();
+    if(attr==='vigor') player.vigor++;
+    else if(attr==='forca') player.forca++;
+    else if(attr==='destreza') player.destreza++;
+    else if(attr==='armadura') player.armadura++;
+    else alert('Atributo inválido, ponto perdido');
+    player.pv = player.vigor*10;
 }
 
-/* ---------- Gain fragment ---------- */
-function giveFragment(index){
-  if(index>=0 && index < 4){
-    player.fragments[index] = true;
-    saveGame(); updateHUD();
-  }
+// --- Início da aventura ---
+function startAdventure(){
+    document.getElementById('locationScreen').innerHTML = `<h2>O Rei Robert convoca você para recuperar os 4 artefatos da chave!</h2>
+    <button onclick="goToLocation('cidade')">Ir à Cidade</button>
+    <button onclick="goToLocation('floresta')">Explorar Floresta</button>
+    <button onclick="goToLocation('biblioteca')">Ir à Biblioteca</button>`;
 }
 
-/* ---------- Rewards after enemy defeat handled in playerAttack ---------- */
-
-/* ---------- Utility: show profile ---------- */
-function abrirPerfil(){ showScreen('screen-profile'); updateHUD(); }
-
-/* ---------- Endgame (boss defeat) ---------- */
-function showFinalVictory(){
-  // show final screen narrative
-  let text = `Você reuniu os 4 fragmentos e derrotou o Dragão Luparus!\n\nO Rei Robert entrega o grande discurso:\n"Por tua coragem e sacrifício, ${player.name}, o reino te aplaude. Hoje sou eu que te agradeço." \n\nA princesa segura sua mão e o povo o consagra HERÓI.`;
-  document.getElementById('finalText').innerText = text;
-  // clear save to allow restart
-  localStorage.removeItem(SAVE_KEY);
-  showScreen('screen-final');
-}
-
-/* ---------- Helper: encounter starter ---------- */
-function startEncounter(template){ startEncounter = null; /* placeholder to avoid hoisting confusion */ }
- // re-declare startEncounter to actual implementation (above) - but already implemented earlier as startEncounter; ignore this stub
-
-/* ---------- Utility wrappers and init ---------- */
-function logStart(){
-  document.getElementById('log').innerHTML = '';
-}
-function showScreenSafe(id){ showScreen(id); }
-function resumeSaved(){
-  if(loadGame()){
+// --- Exploração ---
+function goToLocation(loc){
+    let content = '';
+    if(loc==='cidade'){
+        content = `<h3>Cidade de Betsim</h3>
+        <button onclick="gainXP('explore', 20,'cidade')">Explorar ruas</button>`;
+    } else if(loc==='floresta'){
+        if(!player.weapon) alert('Cuidado! Você está sem espada.');
+        content = `<h3>Floresta</h3>
+        <button onclick="gainXP('explore', 40,'floresta')">Explorar trilhas</button>`;
+    } else if(loc==='biblioteca'){
+        content = `<h3>Biblioteca</h3>
+        <button onclick="gainXP('explore', 50,'biblioteca')">Pesquisar livros</button>`;
+    }
+    document.getElementById('locationScreen').innerHTML = content;
     updateHUD();
-    showScreen('screen-game');
-    setMainText('Jogo carregado. Continue sua aventura.');
-    showExploreOptions();
-  } else alert('Nenhum salvamento encontrado.');
 }
-function restartAfterVictory(){ localStorage.removeItem(SAVE_KEY); location.reload(); }
 
-/* ---------- Init on load ---------- */
-(function init(){
-  // if there's a save, show continue button
-  const hasSave = loadGame();
-  if(hasSave){
-    document.getElementById('btnContinue').style.display = 'inline-block';
-  }
-  // prepare UI for create screen defaults
-  initCreateDefaults();
-  updateHUD();
-  showScreen('screen-start');
-})();
-
-// Expose some functions to be used inline in markup
-window.showScreen = showScreen;
-window.changeAttr = changeAttr;
-window.saveCharacter = saveCharacter;
-window.abrirPerfil = abrirPerfil;
-window.toggleMenu = toggleMenu;
-window.pauseGame = pauseGame;
-window.saveAndQuit = saveAndQuit;
-window.reiniciarFicha = reiniciarFicha;
-window.startEncounter = function(t){ startEncounter(t); };
-
-// small alias for log
-function log(txt){ document.getElementById('log').innerHTML += `<div>${escapeHtml(txt)}</div>`; document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight; }
+// --- Propina (Easter Egg) ---
+function activatePropina(){
+    if(player.gold<=20 && player.hand && player.hand.name==='ouro'){
+        propinaBonusActive=true;
+        alert('Easter egg ativado! Sistema de propina desbloqueado.');
+    }
+}
 </script>
+
 </body>
 </html>
