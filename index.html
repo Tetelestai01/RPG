@@ -82,6 +82,7 @@ ul{padding-left:20px;}
 <div id="rolagemDados" style="font-size:20px;margin:10px 0;"></div>
 <button class="btn" id="btnRolar" onclick="iniciarTurno()">Iniciar Turno</button>
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
+<button class="btn" id="btnPropina" onclick="usarPropina()" class="hidden">Dar Propina</button>
 </div>
 
 <div id="telaPerfil" class="card hidden">
@@ -107,67 +108,127 @@ let inimigo;
 let rolando=false;
 let tocouOuro=false;
 
-// --- Inicial ---
-window.onload=function(){
-if(localStorage.getItem("jogador")){
-jogador=JSON.parse(localStorage.getItem("jogador"));
-atualizarHUD();
-document.getElementById("btnIniciarJogo").classList.remove("hidden");
-document.getElementById("btnCriarFicha").classList.add("hidden");
-document.getElementById("msgCrieFicha").classList.add("hidden");
-}else{document.getElementById("atributosJogador").innerText=`PV:0 Ouro:50 Mão:Vazio`;}
-};
+// --- Navegação ---
+function mostrarTela(id){
+  let telas=["telaInicial","telaFicha","telaJogo","telaBatalha","telaPerfil"];
+  telas.forEach(t=>document.getElementById(t).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+}
+function toggleMenu(){document.getElementById("menuOpcao").style.display=document.getElementById("menuOpcao").style.display==="none"?"block":"none";}
+function pauseJogo(){alert("Jogo pausado");}
+function sairJogo(){if(confirm("Deseja sair e reiniciar tudo?")) reiniciarJogo();}
+function reiniciarJogo(){localStorage.removeItem("jogador");location.reload();}
+function abrirPerfil(){mostrarTela("telaPerfil");}
+function fecharPerfil(){mostrarTela("telaJogo");}
 
-// --- HUD ---
+// --- Ficha e HUD ---
+function editarFicha(){mostrarTela("telaFicha");}
+function atualizaPontos(){
+  let total=Number(document.getElementById("attrVigor").value)+Number(document.getElementById("attrForca").value)+Number(document.getElementById("attrDestreza").value)+Number(document.getElementById("attrArmadura").value);
+  document.getElementById("pontosDisponiveis").innerText=10-total;
+}
+function salvarFicha(){
+  let nome=document.getElementById("inputNome").value;
+  jogador.nome=nome||"Jogador";
+  jogador.vigor=Number(document.getElementById("attrVigor").value);
+  jogador.forca=Number(document.getElementById("attrForca").value);
+  jogador.destreza=Number(document.getElementById("attrDestreza").value);
+  jogador.armadura=Number(document.getElementById("attrArmadura").value);
+  jogador.pv=jogador.vigor*10;
+  localStorage.setItem("jogador",JSON.stringify(jogador));
+  document.getElementById("btnIniciarJogo").classList.remove("hidden");
+  document.getElementById("btnCriarFicha").classList.add("hidden");
+  document.getElementById("msgCrieFicha").classList.add("hidden");
+  atualizarHUD();
+  mostrarTela("telaInicial");
+}
 function atualizarHUD(){
-let fBonus=jogador.mao && jogador.mao.includes("Espada")?2:0;
-let F=jogador.forca+fBonus;
-document.getElementById("nomeJogador").innerText=jogador.nome;
-document.getElementById("atributosJogador").innerText=
-`PV:${jogador.pv} Ouro:${jogador.ouro} Mão:${jogador.mao||"Vazio"} V(${jogador.vigor}) F(${jogador.forca}${fBonus?`+${fBonus}`:""})=${F} D(${jogador.destreza}) A(${jogador.armadura})`;
-atualizarPerfil();
+  let fBonus=jogador.mao && jogador.mao.includes("Espada")?2:0;
+  let F=jogador.forca+fBonus;
+  document.getElementById("nomeJogador").innerText=jogador.nome;
+  document.getElementById("atributosJogador").innerText=`PV:${jogador.pv} Ouro:${jogador.ouro} Mão:${jogador.mao||"Vazio"} V(${jogador.vigor}) F(${jogador.forca}${fBonus?`+${fBonus}`:""})=${F} D(${jogador.destreza}) A(${jogador.armadura})`;
+  atualizarPerfil();
+}
+function atualizarPerfil(){
+  let fBonus=jogador.mao && jogador.mao.includes("Espada")?2:0;
+  let F=jogador.forca+fBonus;
+  document.getElementById("perfilAtributos").innerHTML=
+  `<p>Nome: ${jogador.nome}</p><p>Nível: ${jogador.nivel} XP: ${jogador.xp}</p><p>PV: ${jogador.pv}</p><p>V(${jogador.vigor}) F(${jogador.forca}${fBonus?`+${fBonus}`:""})=${F} D(${jogador.destreza}) A(${jogador.armadura})</p><p>Ouro: <span onclick="clicouOuro()" style="cursor:pointer;color:#f1c40f;">${jogador.ouro}</span></p><p>Mão: ${jogador.mao||"Vazio"}</p>`;
+  let lista=document.getElementById("listaItens");
+  lista.innerHTML="";
+  jogador.inventario.forEach((item,index)=>{lista.innerHTML+=`<li>${item||"Vazio"} <button class="btn-secondary" onclick="colocarMao(${index})">Colocar na mão</button><button class="btn-danger" onclick="descartarItem(${index})">Descartar</button></li>`;});
+  document.getElementById("itemMao").innerText=jogador.mao||"Vazio";
 }
 
-// --- Perfil e Inventário ---
-function atualizarPerfil(){
-let fBonus=jogador.mao && jogador.mao.includes("Espada")?2:0;
-let F=jogador.forca+fBonus;
-document.getElementById("perfilAtributos").innerHTML=
-`<p>Nome: ${jogador.nome}</p>
-<p>Nível: ${jogador.nivel} XP: ${jogador.xp}</p>
-<p>PV: ${jogador.pv}</p>
-<p>V(${jogador.vigor}) F(${jogador.forca}${fBonus?`+${fBonus}`:""})=${F} D(${jogador.destreza}) A(${jogador.armadura})</p>
-<p>Ouro: <span onclick="clicouOuro()" style="cursor:pointer;color:#f1c40f;">${jogador.ouro}</span></p>
-<p>Mão: ${jogador.mao||"Vazio"}</p>`;
-let lista=document.getElementById("listaItens");
-lista.innerHTML="";
-jogador.inventario.forEach((item,index)=>{
-lista.innerHTML+=`<li>${item||"Vazio"} 
-<button class="btn-secondary" onclick="colocarMao(${index})">Colocar na mão</button>
-<button class="btn-danger" onclick="descartarItem(${index})">Descartar</button></li>`;
-});
-document.getElementById("itemMao").innerText=jogador.mao||"Vazio";
-}
+// --- Espaço Mão ---
+function colocarMao(index){jogador.mao=jogador.inventario[index];atualizarHUD();}
+function descartarItem(index){if(jogador.mao===jogador.inventario[index]) jogador.mao=null;jogador.inventario[index]=null;atualizarHUD();}
+function usarItemMao(){if(!jogador.mao) return alert("Nada na mão");if(jogador.mao.includes("Porção")){jogador.pv+=10;jogador.inventario[jogador.inventario.indexOf(jogador.mao)]=null;jogador.mao=null;alert("Porção usada! +10 PV");atualizarHUD();}}
 
 // --- Easteregg Propina ---
 function clicouOuro(){tocouOuro=true;}
 function verificarPropina(){return tocouOuro && jogador.mao!=null;}
-function usarPropina(){
-if(verificarPropina()){
-alert("Você deu propina e fugiu da luta! Você é um frouxo e perde 1 nível!");
-jogador.nivel=Math.max(1,jogador.nivel-1);
-atualizarHUD();
-tocouOuro=false;
-document.getElementById("telaBatalha").classList.add("hidden");
-document.getElementById("telaJogo").classList.remove("hidden");
+function usarPropina(){if(verificarPropina()){alert("Você deu propina e fugiu da luta! Perdeu 1 nível.");jogador.nivel=Math.max(1,jogador.nivel-1);tocouOuro=false;mostrarTela("telaJogo");atualizarHUD();}}
+
+// --- Jogo ---
+function iniciarJogo(){
+mostrarTela("telaJogo");
+document.getElementById("mensagem").innerText=`Bem-vindo ${jogador.nome}!\nO Rei Robert convoca você para recuperar os 4 artefatos da chave.\nEscolha sua primeira ação.`;
+opcoesAventura();
 }
+function opcoesAventura(){
+let opcoes=document.getElementById("opcoesJogo");
+opcoes.innerHTML="";
+opcoes.innerHTML+=`<button class="btn" onclick="irCidade()">Ir à Cidade</button>`;
+opcoes.innerHTML+=`<button class="btn" onclick="irFloresta()">Ir à Floresta</button>`;
+opcoes.innerHTML+=`<button class="btn" onclick="checarInventario()">Checar Inventário</button>`;
+}
+function irCidade(){
+if(!jogador.mao || !jogador.mao.includes("Espada")) alert("Cuidado! Você está sem espada.");
+document.getElementById("mensagem").innerText="Você chegou na cidade. Um aldeão oferece uma loja ou conversa.";
+let opcoes=document.getElementById("opcoesJogo");
+opcoes.innerHTML="";
+opcoes.innerHTML+=`<button class="btn" onclick="visitarLoja()">Ir à Loja</button>`;
+opcoes.innerHTML+=`<button class="btn" onclick="conversaCidade()">Conversar com aldeão</button>`;
+opcoes.innerHTML+=`<button class="btn" onclick="opcoesAventura()">Voltar</button>`;
+}
+function irFloresta(){
+if(!jogador.mao || !jogador.mao.includes("Espada")) alert("Cuidado! Você está sem espada.");
+document.getElementById("mensagem").innerText="Você entrou na floresta e encontra inimigo!";
+opcoesBatalha();
+}
+function checarInventario(){abrirPerfil();}
+function visitarLoja(){
+document.getElementById("mensagem").innerText="Bem-vindo à loja! Você pode comprar Espada +2 ou Porção (10PV).";
+let opcoes=document.getElementById("opcoesJogo");
+opcoes.innerHTML="";
+opcoes.innerHTML+=`<button class="btn" onclick="comprar('Espada +2')">Comprar Espada +2 (50 Ouro)</button>`;
+opcoes.innerHTML+=`<button class="btn" onclick="comprar('Porção')">Comprar Porção (30 Ouro)</button>`;
+opcoes.innerHTML+=`<button class="btn" onclick="opcoesAventura()">Sair da loja</button>`;
+}
+function comprar(item){
+if(item==="Espada +2" && jogador.ouro<50) return alert("Ouro insuficiente!");
+if(item==="Porção" && jogador.ouro<30) return alert("Ouro insuficiente!");
+let slot=jogador.inventario.indexOf(null);
+if(slot===-1) return alert("Inventário cheio!");
+jogador.inventario[slot]=item;
+jogador.ouro-=(item==="Espada +2"?50:30);
+alert(item+" comprado!");
+atualizarHUD();
+visitarLoja();
+}
+function conversaCidade(){
+document.getElementById("mensagem").innerText="Aldeão diz: Cuidado na floresta, procure pistas ou artefatos.";
+let opcoes=document.getElementById("opcoesJogo");
+opcoes.innerHTML="";
+opcoes.innerHTML+=`<button class="btn" onclick="opcoesAventura()">Voltar</button>`;
+if(verificarPropina()) document.getElementById("btnPropina").style.display="inline-block";
 }
 
-// --- Resto das funções ---
-// editarFicha(), salvarFicha(), iniciarJogo(), toggleMenu(), pauseJogo(), sairJogo(), reiniciarJogo(), abrirPerfil(), fecharPerfil(), batalhas, rolar dados, encontros, cidade, floresta, loja, conversas, comprarItem(), iniciarTurno(), voltarJogo(), usarItemMao(), descartarItem(), colocarMao(), etc.
-// As funções implementadas anteriormente devem ser consolidadas aqui.
+// --- Batalha inicial ---
+function opcoesBatalha(){mostrarTela("telaBatalha");document.getElementById("mensagemBatalha").innerText="Inimigo aparece!";inimigo={nome:"Goblin",vigor:2,forca:2,destreza:2,armadura:1,pv:20};document.getElementById("rolagemDados").innerText="";}
+// Funções de rolagem de dado, turnos, ataque/defesa e PV serão adicionadas a seguir.
 
 </script>
 </body>
 </html>
-            
