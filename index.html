@@ -20,7 +20,7 @@ main{padding:20px;}
 .form-group{margin-bottom:12px;}
 .form-group label{display:block;font-size:14px;margin-bottom:4px;color:#34495e;}
 .form-group input{width:100%;padding:8px 10px;border:1px solid #ccd1d9;border-radius:6px;font-size:14px;}
-#mensagem{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;}
+#mensagem{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;white-space:pre-wrap;}
 ul{padding-left:20px;}
 </style>
 </head>
@@ -33,6 +33,7 @@ ul{padding-left:20px;}
 </header>
 
 <main>
+
 <!-- Tela Inicial -->
 <div id="telaInicial" class="card">
 <h1>RPG Betsim</h1>
@@ -62,7 +63,7 @@ ul{padding-left:20px;}
 
 <!-- Tela Jogo -->
 <div id="telaJogo" class="card hidden">
-<div id="mensagem">História inicial: A cidade de Betsim foi invadida pelo inimigo Luparus. Você é um dos heróis escolhidos para reunir os fragmentos da chave da grande caverna. Suas escolhas podem levar a combates, pistas ou recompensas.</div>
+<div id="mensagem">Bem-vindo a Betsim. Sua aventura começa agora.</div>
 <div id="opcoesJogo"></div>
 </div>
 
@@ -75,15 +76,7 @@ ul{padding-left:20px;}
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
 </div>
 
-<!-- Tela Conversa -->
-<div id="telaConversa" class="card hidden">
-<h2>Conversa</h2>
-<div id="mensagemConversa"></div>
-<div id="opcoesConversa"></div>
-<button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
-</div>
-
-<!-- Perfil -->
+<!-- Tela Perfil -->
 <div id="telaPerfil" class="card hidden">
 <h2>Perfil do Jogador</h2>
 <div id="perfilAtributos"></div>
@@ -96,30 +89,8 @@ ul{padding-left:20px;}
 
 <script>
 // ----------------- Variáveis -----------------
-let jogador = {
-nome:"",
-vigor:0,
-forca:0,
-destreza:0,
-armadura:0,
-pv:0,
-nivel:1,
-xp:0,
-ouro:50,
-inventario: [],
-arma:null,
-bolsa:[null,null,null]
-};
-
-let inimigo = {
-nome:"Goblin",
-vigor:2, // PV = 20
-forca:2,
-destreza:2,
-armadura:1,
-pv:20
-};
-
+let jogador = {nome:"",vigor:0,forca:0,destreza:0,armadura:0,pv:0,nivel:1,xp:0,ouro:50,inventario:[],arma:null,bolsa:[null,null,null]};
+let inimigo={nome:"Goblin",vigor:2,forca:2,destreza:2,armadura:1,pv:20};
 let rolando=false;
 
 // ----------------- Inicial -----------------
@@ -181,7 +152,7 @@ atualizaPontos();
 function iniciarJogo(){
 document.getElementById("telaInicial").classList.add("hidden");
 document.getElementById("telaJogo").classList.remove("hidden");
-historiasBetsim();
+exibirCidade();
 }
 
 // ----------------- Perfil -----------------
@@ -193,7 +164,7 @@ atualizarPerfil();
 function fecharPerfil(){
 document.getElementById("telaPerfil").classList.add("hidden");
 document.getElementById("telaJogo").classList.remove("hidden");
-exibirOpcoes(["Continuar"],["continuar"]);
+exibirCidade();
 }
 function atualizarPerfil(){
 let html=`<p>Nome: ${jogador.nome}</p>
@@ -207,7 +178,12 @@ lista.innerHTML="";
 jogador.bolsa.forEach((item,i)=>{lista.innerHTML+=`<li>${item||"Vazio"}</li>`;});
 }
 
-// ----------------- Funções auxiliares -----------------
+// ----------------- Cidade / Floresta -----------------
+function exibirCidade(){
+document.getElementById("mensagem").innerText="Você está na cidade de Betsim. Escolha seu destino.";
+exibirOpcoes(["Ir à loja","Conversar com NPC","Explorar floresta"],["loja","npc","floresta"]);
+}
+
 function exibirOpcoes(textos,funcs){
 let div=document.getElementById("opcoesJogo");
 div.innerHTML="";
@@ -218,18 +194,79 @@ btn.innerText=textos[i];
 btn.onclick=function(){avaliarAcao(funcs[i]);};
 div.appendChild(btn);
 }
-}
 
 function avaliarAcao(acao){
 switch(acao){
-case "continuar": break;
+case "loja": alert("Loja ainda em desenvolvimento."); exibirCidade(); break;
+case "npc": alert("NPC dá uma pista sobre a chave."); exibirCidade(); break;
+case "floresta": iniciarBatalha(); break;
 }
 }
 
-// ----------------- História inicial e conversas -----------------
-function historiasBetsim(){
-document.getElementById("mensagem").innerText="Você começa sua aventura na cidade de Betsim. O território norte foi invadido por Luparus. Sua missão é recuperar os fragmentos da chave e derrotar o dragão.";
-exibirOpcoes(["Ir à cidade","Explorar floresta","Checar status"],["cidade","floresta","status"]);
+// ----------------- Combate -----------------
+function iniciarBatalha(){
+document.getElementById("telaJogo").classList.add("hidden");
+document.getElementById("telaBatalha").classList.remove("hidden");
+inimigo.pv=inimigo.vigor*10;
+document.getElementById("mensagemBatalha").innerText=`Você encontra um ${inimigo.nome}! Seu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}`;
+document.getElementById("rolagemDados").innerText="";
+document.getElementById("btnRolar").disabled=false;
+}
+
+function rolarDado(){
+if(rolando) return;
+rolando=true;
+document.getElementById("btnRolar").disabled=true;
+let display=document.getElementById("rolagemDados");
+let tempo=0;
+let intervalo=setInterval(()=>{
+let num=Math.floor(Math.random()*6)+1;
+display.innerText=num;
+tempo+=100;
+if(tempo>=4000){
+clearInterval(intervalo);
+resolverTurno(num);
+rolando=false;
+document.getElementById("btnRolar").disabled=false;
+}
+},100);
+}
+
+function resolverTurno(dado){
+let ataqueJogador=dado+jogador.destreza;
+let defesaInimigo=Math.floor(Math.random()*6+1)+inimigo.armadura;
+let dano=ataqueJogador-defesaInimigo;
+if(dano<0) dano=0;
+inimigo.pv-=dano;
+
+let ataqueInimigo=Math.floor(Math.random()*6+1)+inimigo.destreza;
+let defesaJogador=Math.floor(Math.random()*6+1)+jogador.armadura;
+let danoInimigo=ataqueInimigo-defesaJogador;
+if(danoInimigo<0) danoInimigo=0;
+jogador.pv-=danoInimigo;
+
+if(jogador.pv<=0){
+document.getElementById("mensagemBatalha").innerText=`Você foi derrotado pelo ${inimigo.nome}!`;
+document.getElementById("rolagemDados").innerText="";
+document.getElementById("btnRolar").disabled=true;
+} else if(inimigo.pv<=0){
+document.getElementById("mensagemBatalha").innerText=`Você derrotou o ${inimigo.nome}! PV restante: ${jogador.pv}`;
+document.getElementById("rolagemDados").innerText="";
+document.getElementById("btnRolar").disabled=true;
+} else{
+document.getElementById("mensagemBatalha").innerText=`Turno concluído!\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}\nRolar novamente para próximo ataque.`;
+}
+}
+
+function voltarJogo(){
+document.getElementById("telaBatalha").classList.add("hidden");
+document.getElementById("telaJogo").classList.remove("hidden");
+exibirCidade();
+}
+
+function voltarMenu(){
+document.getElementById("telaFicha").classList.add("hidden");
+document.getElementById("telaInicial").classList.remove("hidden");
 }
 
 </script>
