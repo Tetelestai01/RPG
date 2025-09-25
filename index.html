@@ -6,10 +6,11 @@
 <title>RPG Betsim - Aventura</title>
 <style>
 body {font-family:'Segoe UI',sans-serif; margin:0; padding:0; background:#f5f5f5; color:#333;}
-#hud {display:flex; justify-content:space-between; padding:10px; background:#ddd; font-weight:bold; flex-wrap:wrap;}
-#gameScreen {padding:10px;}
-button {margin:5px; padding:10px; border:none; border-radius:5px; background:#666; color:white; font-weight:bold;}
-button:hover{background:#444; cursor:pointer;}
+#hud {position:fixed; top:0; left:0; width:100%; background:#222; color:#fff; padding:10px; font-weight:bold; display:flex; justify-content:space-around; flex-wrap:wrap; z-index:100;}
+#hud span{margin:0 5px;}
+#gameScreen {padding:70px 10px 10px 10px;}
+button {margin:5px; padding:10px; border:none; border-radius:5px; background:#555; color:white; font-weight:bold; font-size:16px;}
+button:hover{background:#333; cursor:pointer;}
 input {margin:5px; padding:5px; border-radius:3px; border:1px solid #ccc;}
 .hidden{display:none;}
 #inventory, #hand, #menu{border:1px solid #aaa; padding:5px; margin:5px; border-radius:5px; background:#eee;}
