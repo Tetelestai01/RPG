@@ -33,7 +33,6 @@ ul{padding-left:20px;}
 </header>
 
 <main>
-
 <!-- Tela Inicial -->
 <div id="telaInicial" class="card">
 <h1>RPG Betsim</h1>
@@ -73,6 +72,14 @@ ul{padding-left:20px;}
 <div id="mensagemBatalha"></div>
 <div id="rolagemDados" style="font-size:24px;margin:10px 0;"></div>
 <button class="btn" id="btnRolar" onclick="rolarDado()">Rolar Dado</button>
+<button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
+</div>
+
+<!-- Tela Conversa -->
+<div id="telaConversa" class="card hidden">
+<h2>Conversa</h2>
+<div id="mensagemConversa"></div>
+<div id="opcoesConversa"></div>
 <button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
 </div>
 
@@ -152,7 +159,7 @@ atualizaPontos();
 function iniciarJogo(){
 document.getElementById("telaInicial").classList.add("hidden");
 document.getElementById("telaJogo").classList.remove("hidden");
-exibirCidade();
+cidade();
 }
 
 // ----------------- Perfil -----------------
@@ -164,7 +171,7 @@ atualizarPerfil();
 function fecharPerfil(){
 document.getElementById("telaPerfil").classList.add("hidden");
 document.getElementById("telaJogo").classList.remove("hidden");
-exibirCidade();
+cidade();
 }
 function atualizarPerfil(){
 let html=`<p>Nome: ${jogador.nome}</p>
@@ -178,8 +185,9 @@ lista.innerHTML="";
 jogador.bolsa.forEach((item,i)=>{lista.innerHTML+=`<li>${item||"Vazio"}</li>`;});
 }
 
-// ----------------- Cidade / Floresta -----------------
-function exibirCidade(){
+// ----------------- Cidade / Floresta / Conversa -----------------
+function cidade(){
+document.getElementById("telaJogo").classList.remove("hidden");
 document.getElementById("mensagem").innerText="Você está na cidade de Betsim. Escolha seu destino.";
 exibirOpcoes(["Ir à loja","Conversar com NPC","Explorar floresta"],["loja","npc","floresta"]);
 }
@@ -194,20 +202,34 @@ btn.innerText=textos[i];
 btn.onclick=function(){avaliarAcao(funcs[i]);};
 div.appendChild(btn);
 }
+}
 
 function avaliarAcao(acao){
 switch(acao){
-case "loja": alert("Loja ainda em desenvolvimento."); exibirCidade(); break;
-case "npc": alert("NPC dá uma pista sobre a chave."); exibirCidade(); break;
+case "loja": alert("Loja: ainda em desenvolvimento."); cidade(); break;
+case "npc": conversaNPC(); break;
 case "floresta": iniciarBatalha(); break;
 }
+}
+
+function conversaNPC(){
+document.getElementById("telaJogo").classList.add("hidden");
+document.getElementById("telaConversa").classList.remove("hidden");
+document.getElementById("mensagemConversa").innerText="NPC diz: 'Ouvi rumores sobre a chave do dragão. Cuidado na floresta!'";
+let div=document.getElementById("opcoesConversa");
+div.innerHTML="";
+let btn=document.createElement("button");
+btn.className="btn";
+btn.innerText="Continuar";
+btn.onclick=function(){document.getElementById("telaConversa").classList.add("hidden");cidade();};
+div.appendChild(btn);
 }
 
 // ----------------- Combate -----------------
 function iniciarBatalha(){
 document.getElementById("telaJogo").classList.add("hidden");
 document.getElementById("telaBatalha").classList.remove("hidden");
-inimigo.pv=inimigo.vigor*10;
+inimigo={nome:"Goblin",vigor:2,forca:2,destreza:2,armadura:1,pv:20};
 document.getElementById("mensagemBatalha").innerText=`Você encontra um ${inimigo.nome}! Seu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}`;
 document.getElementById("rolagemDados").innerText="";
 document.getElementById("btnRolar").disabled=false;
@@ -253,6 +275,11 @@ document.getElementById("btnRolar").disabled=true;
 document.getElementById("mensagemBatalha").innerText=`Você derrotou o ${inimigo.nome}! PV restante: ${jogador.pv}`;
 document.getElementById("rolagemDados").innerText="";
 document.getElementById("btnRolar").disabled=true;
+let btnContinuar=document.createElement("button");
+btnContinuar.className="btn";
+btnContinuar.innerText="Voltar à cidade";
+btnContinuar.onclick=function(){voltarJogo();};
+document.getElementById("rolagemDados").appendChild(btnContinuar);
 } else{
 document.getElementById("mensagemBatalha").innerText=`Turno concluído!\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}\nRolar novamente para próximo ataque.`;
 }
@@ -261,15 +288,15 @@ document.getElementById("mensagemBatalha").innerText=`Turno concluído!\nSeu PV:
 function voltarJogo(){
 document.getElementById("telaBatalha").classList.add("hidden");
 document.getElementById("telaJogo").classList.remove("hidden");
-exibirCidade();
+cidade();
 }
 
 function voltarMenu(){
 document.getElementById("telaFicha").classList.add("hidden");
 document.getElementById("telaInicial").classList.remove("hidden");
 }
-
 </script>
 </main>
 </body>
 </html>
+
