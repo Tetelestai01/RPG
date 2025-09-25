@@ -6,8 +6,8 @@
 <title>RPG Betsim</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:"Segoe UI",Arial,sans-serif;background:#f4f4f4;color:#2c3e50;padding-top:60px;}
-header{position:fixed;top:0;left:0;width:100%;background:#2c3e50;color:white;padding:10px;font-size:18px;text-align:center;z-index:1000;display:flex;justify-content:space-between;align-items:center;}
+body{font-family:"Segoe UI",Arial,sans-serif;background:#f4f4f4;color:#2c3e50;padding-top:80px;}
+header{position:fixed;top:0;left:0;width:100%;background:#2c3e50;color:white;padding:10px;font-size:16px;text-align:center;z-index:1000;display:flex;justify-content:space-between;align-items:center;}
 header span{margin:0 10px;}
 main{padding:20px;}
 .card{background:white;border-radius:12px;padding:20px;margin:20px auto;max-width:500px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
@@ -28,6 +28,7 @@ ul{padding-left:20px;}
 
 <header>
 <span id="nomeJogador">Jogador</span>
+<span id="atributosJogador">V:0 F:0 D:0 A:0 PV:0</span>
 <button class="btn-secondary" onclick="abrirPerfil()">Perfil</button>
 </header>
 
@@ -64,6 +65,15 @@ ul{padding-left:20px;}
 <div id="opcoesJogo"></div>
 </div>
 
+<!-- Tela Batalha -->
+<div id="telaBatalha" class="card hidden">
+<h2>Batalha!</h2>
+<div id="mensagemBatalha"></div>
+<div id="rolagemDados" style="font-size:24px;margin:10px 0;"></div>
+<button class="btn" id="btnRolar" onclick="rolarDado()">Rolar Dado</button>
+<button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
+</div>
+
 <!-- Perfil -->
 <div id="telaPerfil" class="card hidden">
 <h2>Perfil do Jogador</h2>
@@ -92,8 +102,23 @@ arma:null,
 bolsa:[null,null,null]
 };
 
+let inimigo = {
+nome:"Goblin",
+vigor:2, // PV = 20
+forca:2,
+destreza:2,
+armadura:1,
+pv:20
+};
+
+let rolando=false;
+
 // ----------------- Ficha -----------------
-function atualizarNome(){document.getElementById("nomeJogador").innerText=jogador.nome;}
+function atualizarNome(){
+document.getElementById("nomeJogador").innerText=jogador.nome;
+document.getElementById("atributosJogador").innerText=`V:${jogador.vigor} F:${jogador.forca} D:${jogador.destreza} A:${jogador.armadura} PV:${jogador.pv}`;
+}
+
 function atualizaPontos(){
 let v=parseInt(document.getElementById("attrVigor").value)||0;
 let f=parseInt(document.getElementById("attrForca").value)||0;
@@ -103,6 +128,7 @@ let total=v+f+d+a;
 document.getElementById("pontosDisponiveis").innerText=10-total;
 document.getElementById("mensagemFicha").innerText=(total>10?"Você excedeu os pontos!":"");
 }
+
 function salvarFicha(){
 let total=parseInt(document.getElementById("attrVigor").value||0)+parseInt(document.getElementById("attrForca").value||0)+parseInt(document.getElementById("attrDestreza").value||0)+parseInt(document.getElementById("attrArmadura").value||0);
 if(total>10){ alert("Distribua corretamente os 10 pontos."); return; }
@@ -181,8 +207,7 @@ document.getElementById("mensagem").innerText="Você chegou à cidade de Betsim.
 exibirOpcoes(["Loja","Conversar com NPC","Voltar"],["loja","npc","iniciar"]);
 break;
 case "floresta":
-document.getElementById("mensagem").innerText="Você explora a floresta e encontra um inimigo!";
-exibirOpcoes(["Atacar","Fugir"],["luta","iniciar"]);
+iniciarBatalha();
 break;
 case "status":abrirPerfil(); break;
 case "loja":
@@ -194,17 +219,17 @@ document.getElementById("mensagem").innerText="Você encontra um NPC corrupto. P
 exibirOpcoes(["Barganhar","Ignorar"],["barganhar","cidade"]);
 break;
 case "compraArma":
-if(jogador.ouro>=20){ jogador.ouro-=20; jogador.arma="+2"; alert("Você comprou uma arma +2"); }
+if(jogador.ouro>=20){ jogador.ouro-=20; jogador.arma="+2"; alert("Você comprou uma arma +2"); atualizarNome(); }
 else alert("Ouro insuficiente!");
 exibirOpcoes(["Continuar"],["loja"]);
 break;
 case "compraPocao":
-if(jogador.ouro>=10){ jogador.ouro-=10; jogador.pv+=10; alert("Você comprou uma poção +10 PV"); }
+if(jogador.ouro>=10){ jogador.ouro-=10; jogador.pv+=10; alert("Você comprou uma poção +10 PV"); atualizarNome(); }
 else alert("Ouro insuficiente!");
 exibirOpcoes(["Continuar"],["loja"]);
 break;
 case "barganhar":
-if(jogador.ouro>=5){ jogador.ouro-=5; alert("Você conseguiu uma informação do NPC!"); }
+if(jogador.ouro>=5){ jogador.ouro-=5; alert("Você conseguiu uma informação do NPC!"); atualizarNome(); }
 else alert("Ouro insuficiente!");
 exibirOpcoes(["Continuar"],["cidade"]);
 break;
@@ -219,8 +244,69 @@ break;
 case "continuar":break;
 }
 }
-</script>
 
+// ----------------- Combate -----------------
+function iniciarBatalha(){
+document.getElementById("telaJogo").classList.add("hidden");
+document.getElementById("telaBatalha").classList.remove("hidden");
+inimigo.pv=inimigo.vigor*10;
+jogador.pv=jogador.vigor*10;
+document.getElementById("mensagemBatalha").innerText=`Você encontra um ${inimigo.nome}! Prepare-se para lutar.\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}`;
+document.getElementById("rolagemDados").innerText="";
+document.getElementById("btnRolar").disabled=false;
+}
+
+function rolarDado(){
+if(rolando) return;
+rolando=true;
+document.getElementById("btnRolar").disabled=true;
+let display=document.getElementById("rolagemDados");
+let tempo=0;
+let intervalo=setInterval(()=>{
+let num=Math.floor(Math.random()*6)+1;
+display.innerText=num;
+tempo+=100;
+if(tempo>=4000){ // 4 segundos
+clearInterval(intervalo);
+resolverTurno(num);
+rolando=false;
+document.getElementById("btnRolar").disabled=false;
+}
+},100);
+}
+
+function resolverTurno(dado){
+let ataqueJogador=dado+jogador.destreza;
+let defesaInimigo=Math.floor(Math.random()*6+1)+inimigo.armadura;
+let dano=ataqueJogador-defesaInimigo;
+if(dano<0) dano=0;
+inimigo.pv-=dano;
+
+let ataqueInimigo=Math.floor(Math.random()*6+1)+inimigo.destreza;
+let defesaJogador=Math.floor(Math.random()*6+1)+jogador.armadura;
+let danoInimigo=ataqueInimigo-defesaJogador;
+if(danoInimigo<0) danoInimigo=0;
+jogador.pv-=danoInimigo;
+
+if(jogador.pv<=0){
+document.getElementById("mensagemBatalha").innerText=`Você foi derrotado pelo ${inimigo.nome}!`;
+document.getElementById("rolagemDados").innerText="";
+document.getElementById("btnRolar").disabled=true;
+} else if(inimigo.pv<=0){
+document.getElementById("mensagemBatalha").innerText=`Você derrotou o ${inimigo.nome}! PV restante: ${jogador.pv}`;
+document.getElementById("rolagemDados").innerText="";
+document.getElementById("btnRolar").disabled=true;
+} else{
+document.getElementById("mensagemBatalha").innerText=`Turno concluído!\nSeu PV: ${jogador.pv} | PV do inimigo: ${inimigo.pv}\nRolar novamente para próximo ataque.`;
+}
+}
+
+function voltarJogo(){
+document.getElementById("telaBatalha").classList.add("hidden");
+document.getElementById("telaJogo").classList.remove("hidden");
+exibirOpcoes(["Ir à cidade","Explorar floresta","Checar status"],["cidade","floresta","status"]);
+}
+</script>
 </main>
 </body>
 </html>
