@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPG Betsim</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Segoe UI",Arial,sans-serif;background:#f4f4f4;color:#2c3e50;padding-top:60px;}
+header{position:fixed;top:0;left:0;width:100%;background:#2c3e50;color:white;padding:10px;font-size:18px;text-align:center;z-index:1000;display:flex;justify-content:space-between;align-items:center;}
+header span{margin:0 10px;}
+main{padding:20px;}
+.card{background:white;border-radius:12px;padding:20px;margin:20px auto;max-width:500px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+.btn{display:inline-block;margin:5px;padding:12px 18px;font-size:16px;border:none;border-radius:10px;background:#8e44ad;color:white;cursor:pointer;transition:all 0.2s;}
+.btn:hover{background:#71368a;}
+.btn:active{transform:scale(0.96);}
+.btn-secondary{background:#95a5a6;}
+.btn-danger{background:#e74c3c;}
+.hidden{display:none;}
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:14px;margin-bottom:4px;color:#34495e;}
+.form-group input{width:100%;padding:8px 10px;border:1px solid #ccd1d9;border-radius:6px;font-size:14px;}
+#mensagem{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;}
+ul{padding-left:20px;}
+</style>
+</head>
+<body>
+
+<header>
+<span id="nomeJogador">Jogador</span>
+<button class="btn-secondary" onclick="abrirPerfil()">Perfil</button>
+</header>
+
+<main>
+<!-- Tela Inicial -->
+<div id="telaInicial" class="card">
+<h1>RPG Betsim</h1>
+<div id="menuInicial">
+<button class="btn" onclick="iniciarJogo()">Iniciar Jogo</button>
+<button class="btn-secondary" onclick="editarFicha()">Editar Ficha</button>
+</div>
+</div>
+
+<!-- Tela Ficha -->
+<div id="telaFicha" class="card hidden">
+<h2>Criação de Personagem</h2>
+<div class="form-group">
+<label>Nome do Jogador:</label>
+<input type="text" id="inputNome" placeholder="Digite seu nome">
+</div>
+<div>Pontos disponíveis: <span id="pontosDisponiveis">10</span></div>
+<div class="form-group"><label>Vigor (PV = Vigor*10)</label><input type="number" id="attrVigor" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
+<div class="form-group"><label>Força</label><input type="number" id="attrForca" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
+<div class="form-group"><label>Destreza</label><input type="number" id="attrDestreza" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
+<div class="form-group"><label>Armadura</label><input type="number" id="attrArmadura" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
+<button class="btn" onclick="salvarFicha()">Salvar Ficha</button>
+<button class="btn-secondary" onclick="voltarMenu()">Voltar</button>
+<div id="mensagemFicha"></div>
+</div>
+
+<!-- Tela Jogo -->
+<div id="telaJogo" class="card hidden">
+<div id="mensagem">Bem-vindo à cidade de Betsim. O território foi invadido e você deve reunir a chave da grande caverna para derrotar o dragão de Luparus.</div>
+<div id="opcoesJogo"></div>
+</div>
+
+<!-- Perfil -->
+<div id="telaPerfil" class="card hidden">
+<h2>Perfil do Jogador</h2>
+<div id="perfilAtributos"></div>
+<div id="inventario">
+<h3>Inventário (3 itens)</h3>
+<ul id="listaItens"></ul>
+</div>
+<button class="btn-secondary" onclick="fecharPerfil()">Voltar</button>
+</div>
+
+<script>
+// ----------------- Variáveis -----------------
+let jogador = {
+nome:"Jogador",
+vigor:0,
+forca:0,
+destreza:0,
+armadura:0,
+pv:0,
+nivel:1,
+xp:0,
+ouro:50,
+inventario: [],
+arma:null,
+bolsa:[null,null,null]
+};
+
+// ----------------- Ficha -----------------
+function atualizarNome(){document.getElementById("nomeJogador").innerText=jogador.nome;}
+function atualizaPontos(){
+let v=parseInt(document.getElementById("attrVigor").value)||0;
+let f=parseInt(document.getElementById("attrForca").value)||0;
+let d=parseInt(document.getElementById("attrDestreza").value)||0;
+let a=parseInt(document.getElementById("attrArmadura").value)||0;
+let total=v+f+d+a;
+document.getElementById("pontosDisponiveis").innerText=10-total;
+document.getElementById("mensagemFicha").innerText=(total>10?"Você excedeu os pontos!":"");
+}
+function salvarFicha(){
+let total=parseInt(document.getElementById("attrVigor").value||0)+parseInt(document.getElementById("attrForca").value||0)+parseInt(document.getElementById("attrDestreza").value||0)+parseInt(document.getElementById("attrArmadura").value||0);
+if(total>10){ alert("Distribua corretamente os 10 pontos."); return; }
+jogador.nome=document.getElementById("inputNome").value||"Jogador";
+jogador.vigor=parseInt(document.getElementById("attrVigor").value)||0;
+jogador.forca=parseInt(document.getElementById("attrForca").value)||0;
+jogador.destreza=parseInt(document.getElementById("attrDestreza").value)||0;
+jogador.armadura=parseInt(document.getElementById("attrArmadura").value)||0;
+jogador.pv=jogador.vigor*10;
+atualizarNome();
+alert("Ficha salva!");
+voltarMenu();
+}
+
+// ----------------- Navegação -----------------
+function voltarMenu(){
+document.getElementById("telaFicha").classList.add("hidden");
+document.getElementById("telaInicial").classList.remove("hidden");
+}
+function editarFicha(){
+document.getElementById("telaInicial").classList.add("hidden");
+document.getElementById("telaFicha").classList.remove("hidden");
+document.getElementById("inputNome").value=jogador.nome;
+document.getElementById("attrVigor").value=jogador.vigor;
+document.getElementById("attrForca").value=jogador.forca;
+document.getElementById("attrDestreza").value=jogador.destreza;
+document.getElementById("attrArmadura").value=jogador.armadura;
+atualizaPontos();
+}
+function iniciarJogo(){
+document.getElementById("telaInicial").classList.add("hidden");
+document.getElementById("telaJogo").classList.remove("hidden");
+exibirOpcoes(["Ir à cidade","Explorar floresta","Checar status"],["cidade","floresta","status"]);
+}
+
+// ----------------- Perfil -----------------
+function abrirPerfil(){
+document.getElementById("telaPerfil").classList.remove("hidden");
+document.getElementById("telaJogo").classList.add("hidden");
+atualizarPerfil();
+}
+function fecharPerfil(){
+document.getElementById("telaPerfil").classList.add("hidden");
+document.getElementById("telaJogo").classList.remove("hidden");
+exibirOpcoes(["Continuar"],["continuar"]);
+}
+function atualizarPerfil(){
+let html=`<p>Nome: ${jogador.nome}</p>
+<p>Nível: ${jogador.nivel} XP: ${jogador.xp}</p>
+<p>PV: ${jogador.pv}</p>
+<p>Vigor: ${jogador.vigor}, Força: ${jogador.forca}, Destreza: ${jogador.destreza}, Armadura: ${jogador.armadura}</p>
+<p>Ouro: ${jogador.ouro}</p>`;
+document.getElementById("perfilAtributos").innerHTML=html;
+let lista=document.getElementById("listaItens");
+lista.innerHTML="";
+jogador.bolsa.forEach((item,i)=>{lista.innerHTML+=`<li>${item||"Vazio"}</li>`;});
+}
+
+// ----------------- Sistema de Opções -----------------
+function exibirOpcoes(textos,funcs){
+let div=document.getElementById("opcoesJogo");
+div.innerHTML="";
+for(let i=0;i<textos.length;i++){
+let btn=document.createElement("button");
+btn.className="btn";
+btn.innerText=textos[i];
+btn.onclick=function(){avaliarAcao(funcs[i]);};
+div.appendChild(btn);
+}
+}
+
+function avaliarAcao(acao){
+switch(acao){
+case "cidade":
+document.getElementById("mensagem").innerText="Você chegou à cidade de Betsim. Pode visitar a loja ou conversar com NPC.";
+exibirOpcoes(["Loja","Conversar com NPC","Voltar"],["loja","npc","iniciar"]);
+break;
+case "floresta":
+document.getElementById("mensagem").innerText="Você explora a floresta e encontra um inimigo!";
+exibirOpcoes(["Atacar","Fugir"],["luta","iniciar"]);
+break;
+case "status":abrirPerfil(); break;
+case "loja":
+document.getElementById("mensagem").innerText="Você entra na loja. Pode comprar arma (+força) ou poção (+PV). Cada compra custa ouro.";
+exibirOpcoes(["Comprar Arma","Comprar Poção","Voltar"],["compraArma","compraPocao","cidade"]);
+break;
+case "npc":
+document.getElementById("mensagem").innerText="Você encontra um NPC corrupto. Pode tentar barganhar ou ignorar.";
+exibirOpcoes(["Barganhar","Ignorar"],["barganhar","cidade"]);
+break;
+case "compraArma":
+if(jogador.ouro>=20){ jogador.ouro-=20; jogador.arma="+2"; alert("Você comprou uma arma +2"); }
+else alert("Ouro insuficiente!");
+exibirOpcoes(["Continuar"],["loja"]);
+break;
+case "compraPocao":
+if(jogador.ouro>=10){ jogador.ouro-=10; jogador.pv+=10; alert("Você comprou uma poção +10 PV"); }
+else alert("Ouro insuficiente!");
+exibirOpcoes(["Continuar"],["loja"]);
+break;
+case "barganhar":
+if(jogador.ouro>=5){ jogador.ouro-=5; alert("Você conseguiu uma informação do NPC!"); }
+else alert("Ouro insuficiente!");
+exibirOpcoes(["Continuar"],["cidade"]);
+break;
+case "luta":
+alert("Sistema de combate em breve...");
+exibirOpcoes(["Voltar"],["iniciar"]);
+break;
+case "iniciar":
+document.getElementById("mensagem").innerText="Bem-vindo à cidade de Betsim. O território foi invadido e você deve reunir a chave da grande caverna para derrotar o dragão de Luparus.";
+exibirOpcoes(["Ir à cidade","Explorar floresta","Checar status"],["cidade","floresta","status"]);
+break;
+case "continuar":break;
+}
+}
+</script>
+
+</main>
+</body>
+</html>
