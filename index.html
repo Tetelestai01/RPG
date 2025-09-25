@@ -1,234 +1,279 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RPG Betsim - Missão da Chave</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:"Segoe UI",Arial,sans-serif;background:#f4f4f4;color:#2c3e50;padding-top:100px;}
-header{position:fixed;top:0;left:0;width:100%;background:#2c3e50;color:white;padding:10px;font-size:16px;text-align:center;z-index:1000;display:flex;justify-content:space-between;align-items:center;}
-header span{margin:0 5px;}
-main{padding:10px;}
-.card{background:white;border-radius:12px;padding:20px;margin:20px auto;max-width:500px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
-.btn{display:inline-block;margin:5px;padding:10px 14px;font-size:16px;border:none;border-radius:10px;background:#8e44ad;color:white;cursor:pointer;transition:all 0.2s;}
-.btn:hover{background:#71368a;}
-.btn:active{transform:scale(0.96);}
-.btn-secondary{background:#95a5a6;}
-.btn-danger{background:#e74c3c;}
-.hidden{display:none;}
-.form-group{margin-bottom:12px;}
-.form-group label{display:block;font-size:14px;margin-bottom:4px;color:#34495e;}
-.form-group input{width:100%;padding:8px 10px;border:1px solid #ccd1d9;border-radius:6px;font-size:14px;}
-#mensagem,#mensagemBatalha,#mensagemConversa{margin:10px 0;padding:10px;background:#ecf0f1;border-radius:6px;white-space:pre-wrap;max-height:300px;overflow-y:auto;}
-ul{padding-left:20px;}
-#menuOpcao{position:fixed;top:50px;right:10px;background:#34495e;color:white;padding:10px;border-radius:8px;display:none;z-index:1001;}
-#menuOpcao button{display:block;width:100%;margin:5px 0;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Lenda da Chave Perdida</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #111;
+      color: #f4f4f4;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    #game, #menu, #char-creation { display: none; }
+    .hud {
+      background: #222;
+      padding: 10px;
+      display: flex;
+      justify-content: space-around;
+      font-size: 14px;
+    }
+    .hud span { cursor: pointer; }
+    #output {
+      padding: 20px;
+      min-height: 200px;
+      text-align: left;
+      background: #1c1c1c;
+      border-top: 2px solid #333;
+      overflow-y: auto;
+    }
+    .btn {
+      background: #444;
+      color: white;
+      padding: 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: block;
+      width: 90%;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .btn:hover { background: #666; }
+  </style>
 </head>
 <body>
 
-<header>
-<span id="nomeJogador">Jogador</span>
-<span id="atributosJogador">PV:0 Ouro:50 Mão:Vazio</span>
-<div>
-<button class="btn-secondary" onclick="abrirPerfil()">Perfil</button>
-<button class="btn-secondary" onclick="toggleMenu()">Menu</button>
-</div>
-</header>
+  <!-- Tela inicial -->
+  <div id="menu">
+    <h1>⚔️ A Lenda da Chave Perdida ⚔️</h1>
+    <button class="btn" onclick="startCharCreation()">Criar Ficha</button>
+  </div>
 
-<div id="menuOpcao">
-<button class="btn" onclick="pauseJogo()">Pause</button>
-<button class="btn-danger" onclick="sairJogo()">Sair do Jogo</button>
-<button class="btn-secondary" onclick="reiniciarJogo()">Reiniciar Ficha</button>
-<button class="btn-secondary" onclick="toggleMenu()">Fechar Menu</button>
-</div>
+  <!-- Criação de personagem -->
+  <div id="char-creation">
+    <h2>Criação de Personagem</h2>
+    <label>Nome: <input id="charName" type="text"></label><br><br>
+    <button class="btn" onclick="saveCharacter()">Salvar Ficha</button>
+  </div>
 
-<main>
-<div id="telaInicial" class="card">
-<h1>RPG Betsim</h1>
-<p>O Rei Robert te convoca para uma missão: reunir os quatro artefatos da chave da grande caverna e derrotar o dragão de Luparus.</p>
-<div id="menuInicial">
-<button class="btn" id="btnCriarFicha" onclick="editarFicha()">Criar Ficha</button>
-<button class="btn hidden" id="btnIniciarJogo" onclick="iniciarJogo()">Iniciar Aventura</button>
-</div>
-<div id="msgCrieFicha">Crie seu personagem para iniciar o jogo.</div>
-</div>
+  <!-- HUD -->
+  <div id="game">
+    <div class="hud">
+      <span id="hudPV"></span>
+      <span id="hudGold" onclick="goldClicked()"></span>
+      <span id="hudAttr"></span>
+      <span id="hudMao"></span>
+      <span id="hudNivel"></span>
+    </div>
+    <div id="output"></div>
+    <div id="actions"></div>
+    <div>
+      <button class="btn" onclick="openMenu()">Menu</button>
+    </div>
+  </div>
 
-<div id="telaFicha" class="card hidden">
-<h2>Criação de Personagem</h2>
-<div class="form-group">
-<label>Nome do Jogador:</label>
-<input type="text" id="inputNome" placeholder="Digite seu nome">
-</div>
-<div>Pontos disponíveis: <span id="pontosDisponiveis">10</span></div>
-<div class="form-group"><label>Vigor (PV = Vigor*10)</label><input type="number" id="attrVigor" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
-<div class="form-group"><label>Força</label><input type="number" id="attrForca" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
-<div class="form-group"><label>Destreza</label><input type="number" id="attrDestreza" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
-<div class="form-group"><label>Armadura</label><input type="number" id="attrArmadura" min="0" max="10" value="0" onchange="atualizaPontos()"></div>
-<button class="btn" onclick="salvarFicha()">Salvar Ficha</button>
-<button class="btn-secondary" onclick="voltarMenu()">Voltar</button>
-<div id="mensagemFicha"></div>
-</div>
+  <!-- Menu pausa -->
+  <div id="pauseMenu" style="display:none;">
+    <h2>Menu</h2>
+    <button class="btn" onclick="resumeGame()">Retomar</button>
+    <button class="btn" onclick="restartGame()">Reiniciar</button>
+    <button class="btn" onclick="quitGame()">Sair do Jogo</button>
+  </div>
 
-<div id="telaJogo" class="card hidden">
-<div id="mensagem"></div>
-<div id="opcoesJogo"></div>
-</div>
+  <script>
+    let player = {
+      nome: "",
+      pv: 30,
+      vigor: 3,
+      forca: 3,
+      destreza: 3,
+      ouro: 50,
+      nivel: 1,
+      mao: "",
+      inventario: [],
+      propinaReady: false // controla easter egg
+    };
 
-<div id="telaBatalha" class="card hidden">
-<h2>Batalha!</h2>
-<div id="mensagemBatalha"></div>
-<div id="rolagemDados" style="font-size:20px;margin:10px 0;"></div>
-<button class="btn" id="btnRolar" onclick="iniciarTurno()">Iniciar Turno</button>
-<button class="btn-secondary" onclick="voltarJogo()">Voltar</button>
-<button class="btn" id="btnPropina" onclick="usarPropina()" class="hidden">Dar Propina</button>
-</div>
+    let inBattle = false;
+    let inConversation = false;
 
-<div id="telaPerfil" class="card hidden">
-<h2>Perfil do Jogador</h2>
-<div id="perfilAtributos"></div>
-<div id="inventario">
-<h3>Inventário (3 itens)</h3>
-<ul id="listaItens"></ul>
-</div>
-<div id="mao">
-<h3>Mão</h3>
-<p id="itemMao">Vazio</p>
-<button class="btn" onclick="usarItemMao()">Usar item</button>
-<button class="btn-secondary" onclick="removerItemMao()">Descartar item</button>
-</div>
-<button class="btn-secondary" onclick="fecharPerfil()">Voltar</button>
-</div>
+    function startCharCreation() {
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("char-creation").style.display = "block";
+    }
 
-<script>
-// --- Dados iniciais ---
-let jogador={nome:"",vigor:0,forca:0,destreza:0,armadura:0,pv:0,nivel:1,xp:0,ouro:50,inventario:[null,null,null],mao:null,chave:[false,false,false,false],armaBonus:0,propina:false};
-let inimigo;
-let rolando=false;
-let tocouOuro=false;
+    function saveCharacter() {
+      const nome = document.getElementById("charName").value.trim();
+      if (!nome) {
+        alert("Digite um nome!");
+        return;
+      }
+      player.nome = nome;
+      document.getElementById("char-creation").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      intro();
+    }
 
-// --- Navegação ---
-function mostrarTela(id){
-  let telas=["telaInicial","telaFicha","telaJogo","telaBatalha","telaPerfil"];
-  telas.forEach(t=>document.getElementById(t).classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
-}
-function toggleMenu(){document.getElementById("menuOpcao").style.display=document.getElementById("menuOpcao").style.display==="none"?"block":"none";}
-function pauseJogo(){alert("Jogo pausado");}
-function sairJogo(){if(confirm("Deseja sair e reiniciar tudo?")) reiniciarJogo();}
-function reiniciarJogo(){localStorage.removeItem("jogador");location.reload();}
-function abrirPerfil(){mostrarTela("telaPerfil");}
-function fecharPerfil(){mostrarTela("telaJogo");}
+    function intro() {
+      log(`👑 O Rei Robert convoca você, ${player.nome}, para uma missão: recuperar os quatro fragmentos da Chave Perdida. 
+      Apenas com a chave completa será possível derrotar o dragão que ameaça o reino. Boa sorte, herói!`);
+      showActions(["Ir à cidade", "Ir à floresta", "Checar inventário"]);
+      updateHUD();
+    }
 
-// --- Ficha e HUD ---
-function editarFicha(){mostrarTela("telaFicha");}
-function atualizaPontos(){
-  let total=Number(document.getElementById("attrVigor").value)+Number(document.getElementById("attrForca").value)+Number(document.getElementById("attrDestreza").value)+Number(document.getElementById("attrArmadura").value);
-  document.getElementById("pontosDisponiveis").innerText=10-total;
-}
-function salvarFicha(){
-  let nome=document.getElementById("inputNome").value;
-  jogador.nome=nome||"Jogador";
-  jogador.vigor=Number(document.getElementById("attrVigor").value);
-  jogador.forca=Number(document.getElementById("attrForca").value);
-  jogador.destreza=Number(document.getElementById("attrDestreza").value);
-  jogador.armadura=Number(document.getElementById("attrArmadura").value);
-  jogador.pv=jogador.vigor*10;
-  localStorage.setItem("jogador",JSON.stringify(jogador));
-  document.getElementById("btnIniciarJogo").classList.remove("hidden");
-  document.getElementById("btnCriarFicha").classList.add("hidden");
-  document.getElementById("msgCrieFicha").classList.add("hidden");
-  atualizarHUD();
-  mostrarTela("telaInicial");
-}
-function atualizarHUD(){
-  let fBonus=jogador.mao && jogador.mao.includes("Espada")?2:0;
-  let F=jogador.forca+fBonus;
-  document.getElementById("nomeJogador").innerText=jogador.nome;
-  document.getElementById("atributosJogador").innerText=`PV:${jogador.pv} Ouro:${jogador.ouro} Mão:${jogador.mao||"Vazio"} V(${jogador.vigor}) F(${jogador.forca}${fBonus?`+${fBonus}`:""})=${F} D(${jogador.destreza}) A(${jogador.armadura})`;
-  atualizarPerfil();
-}
-function atualizarPerfil(){
-  let fBonus=jogador.mao && jogador.mao.includes("Espada")?2:0;
-  let F=jogador.forca+fBonus;
-  document.getElementById("perfilAtributos").innerHTML=
-  `<p>Nome: ${jogador.nome}</p><p>Nível: ${jogador.nivel} XP: ${jogador.xp}</p><p>PV: ${jogador.pv}</p><p>V(${jogador.vigor}) F(${jogador.forca}${fBonus?`+${fBonus}`:""})=${F} D(${jogador.destreza}) A(${jogador.armadura})</p><p>Ouro: <span onclick="clicouOuro()" style="cursor:pointer;color:#f1c40f;">${jogador.ouro}</span></p><p>Mão: ${jogador.mao||"Vazio"}</p>`;
-  let lista=document.getElementById("listaItens");
-  lista.innerHTML="";
-  jogador.inventario.forEach((item,index)=>{lista.innerHTML+=`<li>${item||"Vazio"} <button class="btn-secondary" onclick="colocarMao(${index})">Colocar na mão</button><button class="btn-danger" onclick="descartarItem(${index})">Descartar</button></li>`;});
-  document.getElementById("itemMao").innerText=jogador.mao||"Vazio";
-}
+    function showActions(actions) {
+      const actionsDiv = document.getElementById("actions");
+      actionsDiv.innerHTML = "";
+      actions.forEach(act => {
+        const btn = document.createElement("button");
+        btn.textContent = act;
+        btn.className = "btn";
+        btn.onclick = () => handleAction(act);
+        actionsDiv.appendChild(btn);
+      });
+    }
 
-// --- Espaço Mão ---
-function colocarMao(index){jogador.mao=jogador.inventario[index];atualizarHUD();}
-function descartarItem(index){if(jogador.mao===jogador.inventario[index]) jogador.mao=null;jogador.inventario[index]=null;atualizarHUD();}
-function usarItemMao(){if(!jogador.mao) return alert("Nada na mão");if(jogador.mao.includes("Porção")){jogador.pv+=10;jogador.inventario[jogador.inventario.indexOf(jogador.mao)]=null;jogador.mao=null;alert("Porção usada! +10 PV");atualizarHUD();}}
+    function handleAction(act) {
+      if (act === "Ir à cidade") {
+        inConversation = true;
+        log("🏙️ Você chega à cidade. Um aldeão se aproxima para conversar.");
+        showActions(["Conversar com aldeão", "Voltar"]);
+      }
+      else if (act === "Ir à floresta") {
+        inBattle = true;
+        log("🌲 Na floresta, um goblin salta diante de você!");
+        startBattle({ nome: "Goblin", pv: 12, armadura: 2, ataque: 3 });
+      }
+      else if (act === "Checar inventário") {
+        openInventory();
+      }
+      else if (act === "Conversar com aldeão") {
+        npcConversation();
+      }
+      else if (act === "Voltar") {
+        inConversation = false;
+        intro();
+      }
+    }
 
-// --- Easteregg Propina ---
-function clicouOuro(){tocouOuro=true;}
-function verificarPropina(){return tocouOuro && jogador.mao!=null;}
-function usarPropina(){if(verificarPropina()){alert("Você deu propina e fugiu da luta! Perdeu 1 nível.");jogador.nivel=Math.max(1,jogador.nivel-1);tocouOuro=false;mostrarTela("telaJogo");atualizarHUD();}}
+    function npcConversation() {
+      log("🧑‍🌾 O aldeão fala: 'Herói, ouvi rumores sobre um dos fragmentos da chave perdido nas montanhas.'");
+      showActions(["Agradecer", "Voltar"]);
+      maybeShowPropina();
+    }
 
-// --- Jogo ---
-function iniciarJogo(){
-mostrarTela("telaJogo");
-document.getElementById("mensagem").innerText=`Bem-vindo ${jogador.nome}!\nO Rei Robert convoca você para recuperar os 4 artefatos da chave.\nEscolha sua primeira ação.`;
-opcoesAventura();
-}
-function opcoesAventura(){
-let opcoes=document.getElementById("opcoesJogo");
-opcoes.innerHTML="";
-opcoes.innerHTML+=`<button class="btn" onclick="irCidade()">Ir à Cidade</button>`;
-opcoes.innerHTML+=`<button class="btn" onclick="irFloresta()">Ir à Floresta</button>`;
-opcoes.innerHTML+=`<button class="btn" onclick="checarInventario()">Checar Inventário</button>`;
-}
-function irCidade(){
-if(!jogador.mao || !jogador.mao.includes("Espada")) alert("Cuidado! Você está sem espada.");
-document.getElementById("mensagem").innerText="Você chegou na cidade. Um aldeão oferece uma loja ou conversa.";
-let opcoes=document.getElementById("opcoesJogo");
-opcoes.innerHTML="";
-opcoes.innerHTML+=`<button class="btn" onclick="visitarLoja()">Ir à Loja</button>`;
-opcoes.innerHTML+=`<button class="btn" onclick="conversaCidade()">Conversar com aldeão</button>`;
-opcoes.innerHTML+=`<button class="btn" onclick="opcoesAventura()">Voltar</button>`;
-}
-function irFloresta(){
-if(!jogador.mao || !jogador.mao.includes("Espada")) alert("Cuidado! Você está sem espada.");
-document.getElementById("mensagem").innerText="Você entrou na floresta e encontra inimigo!";
-opcoesBatalha();
-}
-function checarInventario(){abrirPerfil();}
-function visitarLoja(){
-document.getElementById("mensagem").innerText="Bem-vindo à loja! Você pode comprar Espada +2 ou Porção (10PV).";
-let opcoes=document.getElementById("opcoesJogo");
-opcoes.innerHTML="";
-opcoes.innerHTML+=`<button class="btn" onclick="comprar('Espada +2')">Comprar Espada +2 (50 Ouro)</button>`;
-opcoes.innerHTML+=`<button class="btn" onclick="comprar('Porção')">Comprar Porção (30 Ouro)</button>`;
-opcoes.innerHTML+=`<button class="btn" onclick="opcoesAventura()">Sair da loja</button>`;
-}
-function comprar(item){
-if(item==="Espada +2" && jogador.ouro<50) return alert("Ouro insuficiente!");
-if(item==="Porção" && jogador.ouro<30) return alert("Ouro insuficiente!");
-let slot=jogador.inventario.indexOf(null);
-if(slot===-1) return alert("Inventário cheio!");
-jogador.inventario[slot]=item;
-jogador.ouro-=(item==="Espada +2"?50:30);
-alert(item+" comprado!");
-atualizarHUD();
-visitarLoja();
-}
-function conversaCidade(){
-document.getElementById("mensagem").innerText="Aldeão diz: Cuidado na floresta, procure pistas ou artefatos.";
-let opcoes=document.getElementById("opcoesJogo");
-opcoes.innerHTML="";
-opcoes.innerHTML+=`<button class="btn" onclick="opcoesAventura()">Voltar</button>`;
-if(verificarPropina()) document.getElementById("btnPropina").style.display="inline-block";
-}
+    // --- Sistema de inventário ---
+    function openInventory() {
+      let invText = "📦 Inventário:\n";
+      if (player.inventario.length === 0) invText += "Vazio.";
+      else invText += player.inventario.join(", ");
+      invText += `\n\n🖐️ Na mão: ${player.mao || "vazio"}`;
+      log(invText);
+      showActions(["Colocar espada na mão", "Colocar poção na mão", "Jogar fora item", "Voltar"]);
+    }
 
-// --- Batalha inicial ---
-function opcoesBatalha(){mostrarTela("telaBatalha");document.getElementById("mensagemBatalha").innerText="Inimigo aparece!";inimigo={nome:"Goblin",vigor:2,forca:2,destreza:2,armadura:1,pv:20};document.getElementById("rolagemDados").innerText="";}
-// Funções de rolagem de dado, turnos, ataque/defesa e PV serão adicionadas a seguir.
+    // --- Sistema de batalha ---
+    function startBattle(enemy) {
+      inBattle = true;
+      log(`⚔️ Um ${enemy.nome} aparece!`);
+      showActions(["Atacar", "Defender", "Fugir"]);
+      maybeShowPropina();
+    }
 
-</script>
+    function rollDice() {
+      return Math.floor(Math.random() * 6) + 1;
+    }
+
+    function attackEnemy(enemy) {
+      const dado = rollDice();
+      const ataque = dado + player.destreza + (player.mao === "espada" ? 2 : 0);
+      log(`🎲 Você rolou ${dado} + Destreza(${player.destreza})${player.mao === "espada" ? " + Espada(2)" : ""} = Ataque ${ataque}`);
+      // exemplo defesa inimiga
+      const defesaDado = rollDice();
+      const defesa = defesaDado + enemy.armadura;
+      log(`🛡️ O inimigo rolou ${defesaDado} + Armadura(${enemy.armadura}) = Defesa ${defesa}`);
+      if (ataque > defesa) {
+        enemy.pv -= (ataque - defesa);
+        log(`💥 Você acertou! O ${enemy.nome} ficou com ${enemy.pv} PV`);
+      } else {
+        log("❌ Seu ataque não passou pela defesa.");
+      }
+    }
+
+    // --- Easter egg da propina ---
+    function goldClicked() {
+      if (player.ouro <= 20) {
+        player.propinaReady = true;
+        log("💰 Você olha para seu ouro... algo parece possível.");
+      }
+    }
+
+    function maybeShowPropina() {
+      if (player.propinaReady && (inBattle || inConversation)) {
+        const btn = document.createElement("button");
+        btn.textContent = "Dar propina";
+        btn.className = "btn";
+        btn.onclick = () => usePropina();
+        document.getElementById("actions").appendChild(btn);
+      }
+    }
+
+    function usePropina() {
+      if (inBattle) {
+        log("💸 Você tentou subornar o inimigo! Ele aceita e você foge... mas perde 1 nível.");
+        player.nivel = Math.max(1, player.nivel - 1);
+        inBattle = false;
+        intro();
+      } else if (inConversation) {
+        log("💸 Você oferece uma propina. O aldeão revela informações privilegiadas: 'Dizem que outro fragmento está escondido nas ruínas antigas.'");
+        inConversation = false;
+        intro();
+      }
+      player.propinaReady = false;
+      updateHUD();
+    }
+
+    // --- Utilidades ---
+    function log(text) {
+      document.getElementById("output").innerHTML += `<p>${text}</p>`;
+      document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+    }
+
+    function updateHUD() {
+      document.getElementById("hudPV").textContent = `PV: ${player.pv}`;
+      document.getElementById("hudGold").textContent = `💰 Ouro: ${player.ouro}`;
+      document.getElementById("hudAttr").textContent = `F(${player.forca}${player.mao==="espada" ? " +2":""}), D(${player.destreza}), V(${player.vigor})`;
+      document.getElementById("hudMao").textContent = `🖐️ Mão: ${player.mao || "vazio"}`;
+      document.getElementById("hudNivel").textContent = `Nível: ${player.nivel}`;
+    }
+
+    // --- Menu ---
+    function openMenu() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("pauseMenu").style.display = "block";
+    }
+    function resumeGame() {
+      document.getElementById("pauseMenu").style.display = "none";
+      document.getElementById("game").style.display = "block";
+    }
+    function restartGame() {
+      player = { nome:"", pv:30, vigor:3, forca:3, destreza:3, ouro:50, nivel:1, mao:"", inventario:[], propinaReady:false };
+      document.getElementById("pauseMenu").style.display = "none";
+      document.getElementById("menu").style.display = "block";
+      document.getElementById("output").innerHTML = "";
+    }
+    function quitGame() {
+      restartGame();
+    }
+
+    // inicia no menu
+    document.getElementById("menu").style.display = "block";
+  </script>
 </body>
 </html>
